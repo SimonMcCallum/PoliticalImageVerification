@@ -16,7 +16,7 @@ export default function RootLayout({
       <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, sans-serif" }}>
         <header
           style={{
-            background: "#1a1a2e",
+            background: "#1B1B1B",
             color: "white",
             padding: "1rem 2rem",
             display: "flex",
@@ -30,22 +30,28 @@ export default function RootLayout({
             </h1>
           </a>
           <nav style={{ display: "flex", gap: "1.5rem" }}>
-            <a href="/" style={{ color: "#88c0d0", textDecoration: "none" }}>
+            <a href="/" style={{ color: "#F26522", textDecoration: "none" }}>
               Verify
             </a>
             <a
               href="/party"
-              style={{ color: "#88c0d0", textDecoration: "none" }}
+              style={{ color: "#F26522", textDecoration: "none" }}
             >
               Party Portal
+            </a>
+            <a
+              href="/party/promoter-preview"
+              style={{ color: "#F26522", textDecoration: "none" }}
+            >
+              Promoter Preview
             </a>
           </nav>
         </header>
         <main>{children}</main>
         <footer
           style={{
-            background: "#16213e",
-            color: "#8892b0",
+            background: "#2D2D2D",
+            color: "#999999",
             padding: "1.5rem 2rem",
             textAlign: "center",
             fontSize: "0.875rem",

@@ -8,7 +8,7 @@ export default function Home() {
         <h2 style={{ marginBottom: "0.5rem" }}>
           Verify a Political Campaign Image
         </h2>
-        <p style={{ color: "#555", maxWidth: "600px", margin: "0 auto" }}>
+        <p style={{ color: "#666666", maxWidth: "600px", margin: "0 auto" }}>
           Upload an image you&apos;ve seen in a political advertisement to check
           if it has been officially registered by a New Zealand political party
           for the 2026 General Election.
@@ -24,7 +24,7 @@ export default function Home() {
         style={{ marginTop: "1.5rem" }}
       >
         <h3 style={{ marginTop: 0 }}>How it works</h3>
-        <ol style={{ color: "#555", lineHeight: 1.8 }}>
+        <ol style={{ color: "#666666", lineHeight: 1.8 }}>
           <li>
             Political parties register their official campaign images through
             the Party Portal.
@@ -43,7 +43,7 @@ export default function Home() {
             original.
           </li>
         </ol>
-        <p style={{ color: "#555", fontSize: "0.875rem" }}>
+        <p style={{ color: "#666666", fontSize: "0.875rem" }}>
           Images you upload for verification are not stored. Only their hashes
           are computed in memory and compared.
         </p>

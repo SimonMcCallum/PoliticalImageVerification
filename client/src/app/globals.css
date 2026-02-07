@@ -1,14 +1,21 @@
 :root {
-  --bg-primary: #f8f9fa;
+  /* vote.nz / Electoral Commission inspired palette */
+  --ec-orange: #F26522;
+  --ec-orange-hover: #D4551A;
+  --ec-orange-light: #FFF3EC;
+  --ec-dark: #1B1B1B;
+  --ec-dark-secondary: #2D2D2D;
+
+  --bg-primary: #F5F5F5;
   --bg-card: #ffffff;
-  --text-primary: #1a1a2e;
-  --text-secondary: #555;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --success: #16a34a;
-  --error: #dc2626;
-  --border: #e2e8f0;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --accent: var(--ec-orange);
+  --accent-hover: var(--ec-orange-hover);
+  --success: #28A745;
+  --error: #DC3545;
+  --border: #D8D8D8;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -73,7 +80,7 @@ body {
 .dropzone:hover,
 .dropzone.active {
   border-color: var(--accent);
-  background: #eff6ff;
+  background: var(--ec-orange-light);
 }
 
 .result-verified {

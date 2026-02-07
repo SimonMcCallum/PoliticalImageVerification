@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface VerificationResult {
   verified: boolean;
   result: string;
@@ -36,7 +38,7 @@ export default function ImageVerifier() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/v1/verify/image", {
+      const res = await fetch(`${API_BASE}/api/v1/verify/image`, {
         method: "POST",
         body: formData,
       });

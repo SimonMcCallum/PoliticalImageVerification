@@ -4,6 +4,8 @@ import "../../globals.css";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface VerificationByIdResult {
   verified: boolean;
   party_name: string | null;
@@ -25,7 +27,7 @@ export default function VerifyByIdPage() {
 
     async function verify() {
       try {
-        const res = await fetch(`/api/v1/verify/${id}`);
+        const res = await fetch(`${API_BASE}/api/v1/verify/${id}`);
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         const data = await res.json();
         setResult(data);

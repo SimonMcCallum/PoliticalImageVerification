@@ -6,3 +6,4 @@ from app.models.verification import (  # noqa: F401
     MatchType,
     VerificationResult,
 )
+from app.models.email_job import EmailProcessingJob, EmailJobStatus  # noqa: F401

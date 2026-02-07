@@ -1,0 +1,78 @@
+version: "3.9"
+
+# Production docker-compose.
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Required: Create a .env file in the project root with production secrets:
+#   SECRET_KEY=<random-64-char-string>
+#   MASTER_ENCRYPTION_KEY=<random-64-hex-char-string>
+#   POSTGRES_PASSWORD=<strong-password>
+#   VERIFICATION_BASE_URL=https://verify.yourdomain.nz/verify
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: pivs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: pivs
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pivs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Do NOT expose port 5432 in production; only server accesses it.
+
+  server:
+    build:
+      context: ./server
+      target: production
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://pivs:${POSTGRES_PASSWORD}@db:5432/pivs
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      MASTER_ENCRYPTION_KEY: ${MASTER_ENCRYPTION_KEY:?Set MASTER_ENCRYPTION_KEY in .env}
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /app/storage
+      VERIFICATION_BASE_URL: ${VERIFICATION_BASE_URL:-http://localhost:3000/verify}
+      LOG_LEVEL: info
+      WEB_WORKERS: 4
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - server_storage:/app/storage
+    # In production, sit behind a reverse proxy (nginx/caddy). Don't expose directly.
+    expose:
+      - "8000"
+
+  client:
+    build: ./client
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://server:8000
+    depends_on:
+      - server
+    expose:
+      - "3000"
+
+  # Reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - server
+      - client
+
+volumes:
+  pgdata:
+  server_storage:

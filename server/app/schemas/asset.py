@@ -19,7 +19,9 @@ class AssetResponse(BaseModel):
     verification_url: str
     badge_url: str | None
     qr_code_url: str | None
+    promoter_image_url: str | None = None
     metadata: dict | None
+    promoter_check: dict | None = None
     status: AssetStatus
     created_at: datetime
     expires_at: datetime | None

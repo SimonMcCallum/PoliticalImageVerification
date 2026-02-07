@@ -55,6 +55,19 @@ class PartyUserResponse(BaseModel):
     role: UserRole
     mfa_enabled: bool
     is_active: bool
+    default_statement_position: str
+    email_verified_for_processing: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class PromoterStatementUpdate(BaseModel):
+    statement: str
+
+    model_config = {"json_schema_extra": {"examples": [{"statement": "Authorised by J. Smith, 123 Main St, Wellington, for the Example Party"}]}}
+
+
+class PromoterStatementResponse(BaseModel):
+    statement: str | None
+    updated_at: datetime | None

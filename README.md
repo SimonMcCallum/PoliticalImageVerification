@@ -101,6 +101,73 @@ npm run dev
 
 4. **Badge Tolerance**: The verification badge is kept under 5% of image area so that PDQ perceptual hashing still matches the original unbadged image.
 
+## Running Tests
+
+```bash
+cd server
+pip install -r requirements-test.txt
+pytest tests/ -v
+```
+
+Tests use SQLite (via aiosqlite) instead of PostgreSQL, so no database setup is needed. The test suite includes:
+
+- **Unit tests**: Encryption, hashing, badge/QR generation, storage
+- **Integration tests**: Auth login, asset submission/listing/revocation, verification by image/hash/ID, party management
+
+All 68 tests run in ~17 seconds.
+
+## Production Deployment
+
+### 1. Generate secrets
+
+```bash
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(48))"
+python -c "import secrets; print('MASTER_ENCRYPTION_KEY=' + secrets.token_hex(32))"
+python -c "import secrets; print('POSTGRES_PASSWORD=' + secrets.token_urlsafe(24))"
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env with the generated secrets and your domain
+```
+
+### 3. Deploy with Docker Compose
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+This starts:
+- PostgreSQL (internal only, not exposed)
+- API server with Gunicorn (multi-worker, behind nginx)
+- Next.js client (behind nginx)
+- Nginx reverse proxy on ports 80/443 with rate limiting
+
+### 4. Seed initial data
+
+```bash
+docker compose -f docker-compose.prod.yml exec server python -m seed
+```
+
+### 5. TLS (HTTPS)
+
+For production, configure TLS in `nginx/nginx.conf` by uncommenting the TLS server block and placing your certificates in `nginx/certs/`.
+
+### Server Configuration
+
+Production environment variables:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SECRET_KEY` | JWT signing key | Yes |
+| `MASTER_ENCRYPTION_KEY` | 64-char hex key for AES-256 encryption | Yes |
+| `POSTGRES_PASSWORD` | Database password | Yes |
+| `VERIFICATION_BASE_URL` | Public URL for verification links | Yes |
+| `WEB_WORKERS` | Gunicorn worker count (default: CPUs * 2 + 1) | No |
+| `LOG_LEVEL` | Logging level (default: info) | No |
+
 ## Technology
 
 - **PDQ Hash**: Meta's open-source perceptual hash from [ThreatExchange](https://github.com/facebook/ThreatExchange/tree/main/pdq)

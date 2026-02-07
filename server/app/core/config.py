@@ -34,6 +34,25 @@ class Settings(BaseSettings):
     BADGE_MAX_AREA_PERCENT: float = 5.0
     BADGE_DEFAULT_POSITION: str = "bottom-right"
 
+    # Promoter Statement
+    PROMOTER_MIN_FONT_SIZE: int = 12
+    PROMOTER_WCAG_CONTRAST_RATIO: float = 4.5
+    PROMOTER_OCR_MATCH_THRESHOLD: float = 0.8
+
+    # Email Processing
+    EMAIL_PROCESSING_ENABLED: bool = False
+    EMAIL_IMAP_HOST: str = ""
+    EMAIL_IMAP_PORT: int = 993
+    EMAIL_IMAP_USER: str = ""
+    EMAIL_IMAP_PASSWORD: str = ""
+    EMAIL_SMTP_HOST: str = ""
+    EMAIL_SMTP_PORT: int = 587
+    EMAIL_SMTP_USER: str = ""
+    EMAIL_SMTP_PASSWORD: str = ""
+    EMAIL_PROCESSING_ADDRESS: str = ""
+    EMAIL_POLL_INTERVAL_SECONDS: int = 30
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 30
+
     # Rate limiting
     RATE_LIMIT_VERIFY_PER_MINUTE: int = 30
     RATE_LIMIT_SUBMIT_PER_MINUTE: int = 10

@@ -32,6 +32,10 @@ class Party(Base):
     registration_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     contact_email_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     logo_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    promoter_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
+    promoter_statement_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     status: Mapped[PartyStatus] = mapped_column(
         Enum(PartyStatus), default=PartyStatus.ACTIVE, nullable=False
     )
@@ -66,6 +70,18 @@ class PartyUser(Base):
     mfa_secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    default_statement_position: Mapped[str] = mapped_column(
+        String(20), default="bottom-left", nullable=False, server_default="bottom-left"
+    )
+    email_verified_for_processing: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    email_verification_token_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    email_verification_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

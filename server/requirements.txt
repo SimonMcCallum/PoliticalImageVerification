@@ -18,3 +18,6 @@ httpx==0.28.1
 aiofiles==24.1.0
 boto3==1.36.2
 pyotp==2.9.0
+pytesseract>=0.3.10
+aiosmtplib>=3.0.0
+aioimaplib>=1.1.0
