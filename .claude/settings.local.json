@@ -46,7 +46,9 @@
       "Bash(\"C:/Program Files/PostgreSQL/16/bin/psql.exe\" -U pivs -h localhost -p 5433 -d pivs -c \"SELECT COUNT\\(*\\) FROM parties;\")",
       "Bash(LABOUR_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZDM1NDZlMC1iZWE2LTRkMDYtOGRkNy05YTk4YjI3Zjk1OGIiLCJwYXJ0eV9pZCI6Ijk4ZTAwYjRlLTZmZDgtNGQ4Yi05Y2VmLWI5ZTg1OWEyZDZhMCIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc3MDA5NTQyNH0.tDQNwknO7UyncF_68aR-Bj6cSkjiw6armDHeSHNPB-E\":*)",
       "Bash(NODE_ENV=development npx next dev:*)",
-      "Bash(./venv/Scripts/uvicorn.exe:*)"
+      "Bash(./venv/Scripts/uvicorn.exe:*)",
+      "Bash(git update-index:*)",
+      "Bash(git add:*)"
     ],
     "additionalDirectories": [
       "d:\\git\\PoliticalImageVerification\\client\\src\\app\\verify"
