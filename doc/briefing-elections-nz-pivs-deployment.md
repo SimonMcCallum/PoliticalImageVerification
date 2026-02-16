@@ -6,18 +6,15 @@
 
 **Title:** Deployment of a Political Image Verification System for the 2026 General Election: Strengthening Public Trust in Political Communications
 
-**Security Classification:** In Confidence
-
-**Priority:** High
 
 ---
 
 ## PROPOSAL
 
 1. This briefing seeks the Chief Electoral Officer's agreement to support the deployment and operational integration of a Political Image Verification System (PIVS) for the 2026 General Election, enabling registered political parties to authenticate campaign imagery and providing the public with a tool to verify whether political images are genuine.
+2. Advances in generative AI mean that anyone — including foreign state actors, interest groups, or individuals — can now create realistic political imagery that falsely appears to originate from a New Zealand political party. This fundamentally threatens voters' ability to trust the political communications they encounter. Providing a verification mechanism falls squarely within the Electoral Commission's mandate to promote public confidence in the electoral process.
 
-2. The system has been developed and is available for transfer at minimal cost. Advances in generative AI mean that anyone — including foreign state actors, interest groups, or individuals — can now create realistic political imagery that falsely appears to originate from a New Zealand political party. This fundamentally threatens voters' ability to trust the political communications they encounter. Providing a verification mechanism falls squarely within the Electoral Commission's mandate to promote public confidence in the electoral process.
-
+3. The system is under development and will be available for contracted deployment or IP transfer to the electoral commission, depending on the Commission's preference. The project team is open to discussing arrangements for ongoing technical support during the campaign period. The Commission would need to fund testing, security audit, and operational hosting — estimated at \$40,000–\$90,000 across the election cycle, with infrastructure hosted on Catalyst Cloud under the All-of-Government Cloud Framework Agreement.
 ---
 
 ## RELATION TO THE ELECTORAL COMMISSION'S STRATEGIC PRIORITIES
@@ -25,9 +22,9 @@
 3. This proposal supports the Electoral Commission's:
 
    - **statutory obligation** under the Electoral Act 1993 to promote public confidence in the electoral process and administer parliamentary elections;
-   - **2026 General Election programme**, including the $61.9 million Budget 2025 allocation for election delivery and modernisation;
+   - **2026 General Election programme**, including the \$61.9 million Budget 2025 allocation for election delivery and modernisation;
    - **voter education function**, by providing a practical tool the Commission can direct the public to use when they encounter political imagery of uncertain origin;
-   - **integrity responsibilities**, aligned with the $18.7 million Budget 2025 allocation for election integrity improvements over four years.
+   - **integrity responsibilities**, aligned with the \$18.7 million Budget 2025 allocation for election integrity improvements over four years.
 
 ---
 
@@ -39,7 +36,7 @@
 
 6. The Political Image Verification System provides a practical, technology-based safeguard. Political parties register campaign images through authenticated accounts. The system stores cryptographic and perceptual hashes of each image. Members of the public, media organisations, and platform operators can verify any political image against this registry. The system uses a privacy-first encrypted architecture and requires no personal information from users performing verification.
 
-7. The system has been fully developed and is available for transfer to the Electoral Commission. The project team is open to discussing arrangements for intellectual property transfer and/or ongoing technical support during the campaign period. The Commission would need to fund testing, security audit, and operational hosting — estimated at $60,000-$120,000 across the election cycle, with infrastructure hosted on Catalyst Cloud under the All-of-Government Cloud Framework Agreement. This briefing recommends that the Chief Electoral Officer agree to proceed with testing and deployment ahead of the 2026 General Election.
+7. The system has been developed and is available for initial testing by the Commission. The project team is open to discussing arrangements for contracted maintenance of the system or intellectual property transfer and/or ongoing technical support during the campaign period. The Commission would need to fund testing, security audit, and operational hosting — estimated at \$40,000–\$90,000 across the election cycle, with infrastructure hosted on Catalyst Cloud under the All-of-Government Cloud Framework Agreement. 
 
 ---
 
@@ -51,7 +48,7 @@
 
 9. Globally, more than 80 percent of countries with elections in 2024 experienced AI-generated content that eroded public trust in electoral processes. Key incidents demonstrating the impact on voter trust include:
 
-   a. **United States (2024):** An AI-generated robocall mimicking President Biden's voice told New Hampshire voters not to vote. The perpetrator was fined USD $6 million and criminally indicted. Russian operatives created deepfake videos of Vice President Harris making fabricated statements. AI-generated images falsely depicted Black Americans supporting a candidate.
+   a. **United States (2024):** An AI-generated robocall mimicking President Biden's voice told New Hampshire voters not to vote. The perpetrator was fined USD \$6 million and criminally indicted. Russian operatives created deepfake videos of Vice President Harris making fabricated statements. AI-generated images falsely depicted Black Americans supporting a candidate.
 
    b. **Romania (2024):** The Constitutional Court annulled the presidential first-round election results on 6 December 2024, the first European country to cancel a presidential election due to cyber and information warfare. Investigations uncovered over 85,000 cyberattacks against electoral IT infrastructure, coordinated AI content, bot networks, and troll farms.
 
@@ -77,7 +74,7 @@
 
 14. The Electoral Commission currently has no mechanism to help the public assess the authenticity of political imagery. The key gaps are:
 
-    a. The Commission has stated: "We do not regulate the content of election advertisements, so do not have a position on the use of AI in election ads." This means the body responsible for electoral integrity has no role in helping voters assess the authenticity of political imagery.
+    a. The Commission has stated: "We do not regulate the content of election advertisements, so do not have a position on the use of AI in election ads." This means the body responsible for electoral integrity is currently playing no role in helping voters assess the authenticity of political imagery.
 
     b. No verification infrastructure exists. Promoter statements (section 204F, Electoral Act 1993) identify who is responsible for an advertisement, but do not verify that the visual content is genuinely from that party. A fabricated image can carry a real promoter statement.
 
@@ -103,7 +100,7 @@
 
 ### The proposed system
 
-17. The Political Image Verification System (PIVS) is an open-source, privacy-first platform that allows political parties to register authentic campaign imagery and enables the public to verify that imagery. The system has been fully developed and consists of three components:
+17. The Political Image Verification System (PIVS) is a privacy-first platform that allows political parties to register authentic campaign imagery and enables the public to verify that imagery. The system is being developed and consists of three components:
 
     a. **Party submission portal:** Authorised party representatives submit campaign images through authenticated accounts with multi-factor authentication. The system computes cryptographic and perceptual hashes of each image before encrypting and storing it.
 
@@ -111,13 +108,15 @@
 
     c. **Verification API:** Media organisations and platform operators can integrate verification into their own systems through a documented programming interface.
 
+    d. **Administrative dashboard:** Commission staff can monitor system performance, manage party accounts, and review verification logs.
+
 ### How verification works
 
 18. The system uses a dual-hashing approach to handle the practical reality that political images are modified as they circulate:
 
     a. **Cryptographic hash (SHA-256):** Provides exact-match verification for unmodified original images. This is fast and deterministic.
 
-    b. **Perceptual hash (PDQ, developed by Meta):** Provides fuzzy matching that tolerates visual modifications commonly introduced by social media platforms, including JPEG recompression, resizing, minor cropping, screenshot capture, and the addition of verification badges or QR codes. PDQ uses a 256-bit hash with a Hamming distance threshold; images scoring within this threshold are identified as matching. pHash provides a secondary fallback algorithm.
+    b. **Perceptual hash (PDQ, developed by Meta):** Provides fuzzy matching that tolerates visual modifications commonly introduced by social media platforms, including JPEG recompression, resizing, minor cropping, screenshot capture, and the addition of verification badges or QR codes. PDQ uses a 256-bit hash with a Hamming distance threshold; images scoring within this threshold are identified as matching. pHash provides a secondary fallback algorithm. This is processed locally to avoid privacy concerns of sending images to a third-party service. Generative AI is not used in the verification process to avoid the risk of hallucination and to maintain transparency and auditability.
 
 19. This dual approach means that an image originally registered by a party will still be verified even after it has been shared on Facebook, screenshotted, or printed on a hoarding with a QR verification code added.
 
@@ -153,7 +152,7 @@
 
     a. **Add promoter statements to images:** Authorised party users can overlay their party's promoter statement onto campaign images during registration. The overlay uses contrast-aware text placement (meeting WCAG 2.1 AA legibility standards with a minimum 4.5:1 contrast ratio) and configurable corner positioning, with automatic adjustment for portrait and landscape orientations.
 
-    b. **Verify promoter statements using OCR:** The system can scan submitted images using optical character recognition to check whether a promoter statement is already present and whether it matches the party's registered statement, using fuzzy text matching to account for OCR imprecision.
+    b. **Verify promoter statements using OCR:** The system can scan submitted images using optical character recognition to check whether a promoter statement is already present and whether it matches the party's registered statement, using fuzzy text matching to account for OCR imprecision. This is locally processed so information is not sent to a third-party service.
 
     c. **Batch processing:** Party users can add promoter statements to images in batch mode (upload and download directly) or via email, without registering images as verified assets. This supports high-volume campaign workflows.
 
@@ -175,7 +174,7 @@
 
 ### Development status and readiness
 
-23. The system has been fully developed as an open-source project. The current status is:
+1.  The system is ready for early testing. The current status is:
 
     a. **Core application:** Complete. FastAPI backend, Next.js frontend, PostgreSQL database, and containerised Docker deployment are all built and functional.
 
@@ -189,7 +188,7 @@
 
     f. **Production deployment configuration:** Complete. Gunicorn application server, Nginx reverse proxy with rate limiting, security headers, and TLS termination are configured.
 
-24. The system is ready for acceptance testing, security audit, and deployment into the Commission's operational environment.
+2.  The system is ready for acceptance testing, security audit, and deployment either as a contracted deployment on Catalyst Cloud or to the  Commission's operational environment.
 
 ### Risks and mitigations
 
@@ -243,7 +242,7 @@
 
 28. Based on data from the 2023 General Election, the system would need to handle the following image volumes:
 
-    a. In the 2023 election, the six main parliamentary parties ran approximately 9,000 paid Facebook advertisements across a three-month regulated period: National ran 4,073 Facebook ads, ACT ran 844 Meta ads, and the remaining parties ran a combined total of approximately 4,100 ads (Victoria University of Wellington; RNZ; The Spinoff). However, the number of **unique image creatives** is substantially smaller than the number of ads, as each creative is reused across multiple ad variants with different demographic and geographic targeting.
+    a. In the 2023 election, the six main parliamentary parties ran approximately 9,000 paid Facebook advertisements across a three-month regulated period: National ran 4,073 Facebook ads, ACT ran 844 Meta ads, and the remaining parties ran a combined total of approximately 4,100 ads (Victoria University of Wellington; RNZ; The Spinoff). However, the number of **unique images** is substantially smaller than the number of ads, as each image is reused across multiple ad variants with different demographic and geographic targeting.
 
     b. Physical campaign materials add further volume. Labour's 2023 expense return recorded 130 large, 40 medium, and 200 small hoardings for a single electorate, with similar volumes across other parties and electorates (Electoral Commission, 2023 Party Expenses Returns). Parties also produce flyers, billboards, social media graphics, and print collateral.
 
@@ -266,7 +265,7 @@
 
 ### Financial implications
 
-29. The system has been fully developed as an open-source project. Development costs have already been absorbed by the project team. The project team is open to discussing arrangements for intellectual property transfer and/or technical support during the campaign period; however, the costs below relate only to the Commission's operational hosting and deployment requirements.
+29. The system has initial development to alpha testing, with this cost invested by the project team. The project team is open to discussing arrangements for contracted deployment, intellectual property transfer and/or technical support during the campaign period; however, the costs below relate only to the Commission's operational hosting and deployment requirements.
 
 30. **Recommended hosting platform:** Catalyst Cloud, the only All-of-Government Cloud Framework provider with 100% New Zealand-based infrastructure. Catalyst Cloud is ISO 27001 and ISO 27017 certified, PCI DSS compliant, and all three data centres are located in New Zealand, ensuring data sovereignty under New Zealand law. Cloud usage by government agencies is aggregated under the AoG framework, providing volume discounts regardless of individual agency spend. All prices below are sourced from Catalyst Cloud's published price list (catalystcloud.nz/pricing/price-list/, effective 1 June 2025) and are in NZD exclusive of GST unless otherwise noted.
 
@@ -274,34 +273,34 @@
 
 | Item | Estimated Cost (NZD) | Notes |
 |---|---|---|
-| **Security audit and penetration test** | $30,000–$50,000 | Pre-launch independent security assessment; recommended to be conducted by a GCSB-approved provider |
-| **Acceptance and integration testing** | $10,000–$20,000 * | Commission staff or contracted testers to validate functionality against Commission requirements |
-| **Load and stress testing** | $5,000–$10,000 * | Simulate election-day traffic volumes to validate system capacity |
-| **WCAG accessibility audit** | $5,000–$10,000 * | Confirm the public-facing portal meets WCAG 2.1 AA standards |
-| **Privacy Impact Assessment** | $0–$5,000 * | Required under the Privacy Act 2020; a draft PIA is provided with the system (see Appendix E) |
-| **Infrastructure hosting** (see breakdown below) | $1,000–$2,500/month | Catalyst Cloud hosting for the deployment period (estimated 8 months, April–November 2026) |
+| **Security audit and penetration test if needed** | \$20,000–\$40,000 | Pre-launch independent security assessment; recommended to be conducted by a GCSB-approved provider |
+| **Acceptance and integration testing** | \$10,000–\$20,000 * | Commission staff or contracted testers to validate functionality against Commission requirements |
+| **Load and stress testing** | \$5,000–\$10,000 * | Simulate election-day traffic volumes to validate system capacity |
+| **WCAG accessibility audit** | \$1,000–\$2,000 * | Confirm the public-facing portal meets WCAG 2.1 AA standards |
+| **Privacy Impact Assessment** | \$0–\$5,000 * | Required under the Privacy Act 2020; a draft PIA can be provided with the system |
+| **Infrastructure hosting** (see breakdown below) | \$625–\$1,275/month | Catalyst Cloud hosting for the deployment period (estimated 8 months, April–November 2026) |
 | | | |
-| **Total estimated operational cost** | **$58,000–$110,000** | Across the 2026 election cycle (including 8 months' hosting at $8,000–$20,000) |
+| **Total estimated operational cost** | **\$41,000–\$87,000** | Across the 2026 election cycle (including 8 months' hosting at \$5,000–\$10,200) |
 
 \* These items could be conducted in-house by Commission staff with existing capabilities, reducing costs to staff time only. The privacy impact assessment, acceptance testing, load testing, and accessibility audit do not require external contractors if the Commission has qualified personnel available.
 
-32. The monthly infrastructure hosting estimate of $1,000–$2,500 is based on the following Catalyst Cloud configurations:
+32. The monthly infrastructure hosting estimate of \$625–\$1,275 is based on the following Catalyst Cloud configurations:
 
-    a. **Application compute:** $285–$570/month. Two application servers for the verification API, hash computation (SHA-256, PDQ, pHash), Tesseract OCR processing, and image overlay processing. Lower bound: 2× c1.c2r4 instances (2 vCPU, 4 GB RAM each, at $95.05/month each). Upper bound: 2× c1.c4r8 instances (4 vCPU, 8 GB RAM each, at $190.09/month each) for election-day capacity. One additional worker instance for background processing (c1.c2r4 at $95.05/month to c1.c4r8 at $190.09/month).
+    a. **Application compute:** \$285–\$570/month. Two application servers for the verification API, hash computation (SHA-256, PDQ, pHash), Tesseract OCR processing, and image overlay processing. Lower bound: 2× c1.c2r4 instances (2 vCPU, 4 GB RAM each, at \$95.05/month each). Upper bound: 2× c1.c4r8 instances (4 vCPU, 8 GB RAM each, at \$190.09/month each) for election-day capacity. One additional worker instance for background processing (c1.c2r4 at \$95.05/month to c1.c4r8 at \$190.09/month).
 
-    b. **Managed PostgreSQL database:** $180–$360/month. Catalyst Cloud Managed Database Service with automated backups and replication. A db.c1.c2r4 instance (2 vCPU, 4 GB RAM) provides sufficient capacity for the party registry, asset index, and verification logs. The upper estimate includes a read replica for high-availability during election peak.
+    b. **Managed PostgreSQL database:** \$180–\$360/month. Catalyst Cloud Managed Database Service with automated backups and replication. A db.c1.c2r4 instance (2 vCPU, 4 GB RAM) provides sufficient capacity for the party registry, asset index, and verification logs. The upper estimate includes a read replica for high-availability during election peak.
 
-    c. **Encrypted image storage:** $5–$20/month. Object storage for AES-256-GCM encrypted images, verification badges, QR codes, and promoter-stamped versions. At 60 GB (5,000 images × 12 MB), geo-replicated object storage costs $0.10/GiB/month = ~$6/month. Single-region storage at $0.05/GiB/month halves this cost. Block storage for the database at $0.21/GB/month for 50 GB adds ~$10.50/month.
+    c. **Encrypted image storage:** \$5–\$20/month. Object storage for AES-256-GCM encrypted images, verification badges, QR codes, and promoter-stamped versions. At 60 GB (5,000 images × 12 MB), geo-replicated object storage costs \$0.10/GiB/month = ~\$6/month. Single-region storage at \$0.05/GiB/month halves this cost. Block storage for the database at \$0.21/GB/month for 50 GB adds ~\$10.50/month.
 
-    d. **Network and load balancing:** $75–$150/month. Load balancer ($24.62/month), public IPv4 addresses ($4.50/month each), and outbound data transfer at $0.12/GB. At 200 GB/month outbound (verification responses, image downloads, API traffic), bandwidth costs ~$24/month. CDN for static frontend assets may be provided externally (e.g., Cloudflare free tier) or via Catalyst's network.
+    d. **Network and load balancing:** \$75–\$150/month. Load balancer (\$24.62/month), public IPv4 addresses (\$4.50/month each), and outbound data transfer at \$0.12/GB. At 200 GB/month outbound (verification responses, image downloads, API traffic), bandwidth costs ~\$24/month. CDN for static frontend assets may be provided externally (e.g., Cloudflare free tier) or via Catalyst's network.
 
-    e. **Operational overhead (15% contingency):** $80–$165/month. Covers monitoring, alerting, SSL/TLS certificates (free via Let's Encrypt), DNS, log aggregation, automated backups, and a buffer for unexpected traffic scaling or incident response during the election period.
+    e. **Operational overhead (15% contingency):** \$80–\$165/month. Covers monitoring, alerting, SSL/TLS certificates (free via Let's Encrypt), DNS, log aggregation, automated backups, and a buffer for unexpected traffic scaling or incident response during the election period.
 
-33. All prices above are exclusive of GST (15%). Including GST, the monthly hosting cost is approximately $1,150–$2,875/month, or $9,200–$23,000 for an eight-month deployment period.
+33. All prices above are exclusive of GST (15%). Including GST, the monthly hosting cost is approximately \$720–\$1,470/month, or \$5,750–\$11,750 for an eight-month deployment period.
 
-34. **Cost drivers and scaling:** The primary cost driver is compute, not storage. Image storage at the volumes estimated for a New Zealand general election (60 GB) is negligible on Catalyst Cloud — under $10/month even with geo-replication. The upper hosting estimate accounts for running redundant application servers and a database read replica during the peak election period (August–October), with the option to scale down to the lower configuration outside the peak.
+34. **Cost drivers and scaling:** The primary cost driver is compute, not storage. Image storage at the volumes estimated for a New Zealand general election (60 GB) is negligible on Catalyst Cloud — under \$10/month even with geo-replication. The upper hosting estimate accounts for running redundant application servers and a database read replica during the peak election period (August–October), with the option to scale down to the lower configuration outside the peak.
 
-35. These costs represent a fraction of the Budget 2025 allocations available to the Commission ($18.7 million for integrity improvements; $61.9 million for election delivery). The total is modest compared to the potential cost of an electoral integrity incident. Romania's annulled election required a full re-run at significant public expense and lasting damage to democratic legitimacy.
+35. These costs represent a fraction of the Budget 2025 allocations available to the Commission (\$18.7 million for integrity improvements; \$61.9 million for election delivery). The total is modest compared to the potential cost of an electoral integrity incident. Romania's annulled election required a full re-run at significant public expense and lasting damage to democratic legitimacy.
 
 36. By deploying a system that has already been developed rather than commissioning bespoke development, the Commission avoids the typical software procurement costs and timeframes that would otherwise make deployment ahead of the 2026 election impractical.
 
@@ -392,9 +391,9 @@ The Chief Electoral Officer is recommended to:
 
 44. **note** that the Commission's statutory obligation to promote public confidence in the electoral process and to conduct voter education provides a sufficient basis for offering a voluntary image verification tool;
 
-45. **note** that Budget 2025 allocated $18.7 million over four years for election integrity improvements and $61.9 million for 2026 General Election delivery and modernisation;
+45. **note** that Budget 2025 allocated \$18.7 million over four years for election integrity improvements and \$61.9 million for 2026 General Election delivery and modernisation;
 
-46. **note** that a fully developed Political Image Verification System is available for transfer to the Commission, with operational hosting and deployment costs estimated at $60,000–$110,000 across the election cycle based on Catalyst Cloud pricing under the All-of-Government Cloud Framework Agreement;
+46. **note** that a fully developed Political Image Verification System is available for transfer to the Commission, with operational hosting and deployment costs estimated at \$40,000–\$90,000 across the election cycle based on Catalyst Cloud pricing under the All-of-Government Cloud Framework Agreement;
 
 **Decisions**
 
@@ -524,8 +523,8 @@ The system is pre-configured with New Zealand's seven registered parliamentary p
 | 97% of Americans agree AI should be subject to safety rules | Gallup/SCSP |
 | 87% of voters support AI disclosure requirements for political ads | Public Citizen |
 | Up to 8 million deepfake videos projected on social media by 2025 | Industry projections |
-| $18.7 million allocated in Budget 2025 for election integrity improvements | NZ Budget 2025 |
-| $61.9 million allocated for 2026 election delivery and modernisation | NZ Budget 2025 |
+| \$18.7 million allocated in Budget 2025 for election integrity improvements | NZ Budget 2025 |
+| \$61.9 million allocated for 2026 election delivery and modernisation | NZ Budget 2025 |
 
 ---
 
@@ -533,11 +532,12 @@ The system is pre-configured with New Zealand's seven registered parliamentary p
 
 | Approach | Estimated Operational Cost | Timeline | Risk |
 |---|---|---|---|
-| **Transfer of existing system** (recommended) | $60,000–$110,000 hosting and deployment on Catalyst Cloud | 6 months to deployment | Low — system is built and functional; NZ data sovereignty assured |
-| **Bespoke development via government procurement** | $500,000–$1,000,000+ | 12–18 months | High — unlikely to be ready for 2026 election |
-| **Commercial SaaS solution** | $200,000–$400,000/year | 3–6 months | Medium — data sovereignty concerns with offshore providers; vendor lock-in; ongoing costs |
+| **Transfer of existing system** (recommended) | \$20,000 IP acquisition + \$41,000–\$87,000 hosting and deployment on Catalyst Cloud | 2 months to deployment | Low — system already has basic functionality; NZ data sovereignty assured |
+| **Contracted Deployment** | \$100,000–\$150,000 for managed system deployed on Catalyst Cloud | 2 months to deployment with managed updates and security during the election | Low — system already has basic functionality; NZ data sovereignty assured |
+| **Bespoke development via government procurement** | \$500,000–\$1,000,000+ | 12–18 months | High — impossible for 2026 election |
+| **Commercial SaaS solution** | \$200,000–\$400,000/year | 3–6 months | Medium — data sovereignty concerns with offshore providers; vendor lock-in; ongoing costs |
 
-The transfer approach provides the Commission with full ownership of the source code and infrastructure, avoids vendor lock-in, and ensures data sovereignty through hosting on Catalyst Cloud's 100% New Zealand-based infrastructure under the All-of-Government Cloud Framework Agreement. The operational cost estimate of $60,000–$110,000 covers Catalyst Cloud hosting ($8,000–$20,000 for 8 months), security audit and penetration testing ($30,000–$50,000), and acceptance, load, and accessibility testing ($20,000–$40,000). Image storage for the estimated 2,000–5,000 campaign images across all parties is a negligible cost component at under $10/month on Catalyst Cloud object storage. Arrangements for intellectual property transfer and/or technical support during the campaign period can be discussed separately with the project team.
+The transfer approach provides the Commission with full ownership of the source code and infrastructure, avoids vendor lock-in, and ensures data sovereignty through hosting on Catalyst Cloud's 100% New Zealand-based infrastructure under the All-of-Government Cloud Framework Agreement. The operational cost estimate of \$41,000–\$87,000 covers Catalyst Cloud hosting (\$5,000–\$10,200 for 8 months), security audit and penetration testing (\$20,000–\$40,000), and acceptance testing, load testing, accessibility audit, and privacy impact assessment (\$16,000–\$37,000). Image storage for the estimated 2,000–5,000 campaign images across all parties is a negligible cost component at under \$10/month on Catalyst Cloud object storage. Arrangements for intellectual property transfer and/or technical support during the campaign period can be discussed separately with the project team.
 
 ---
 
@@ -569,31 +569,31 @@ The full PIA is available for review by the Commission's privacy officer and for
 
 5. Ministry of Justice. *Electoral law changes.* https://www.justice.govt.nz/about/news-and-media/news/electoral-law-changes/
 
-6. Ministry of Business, Innovation and Employment. *New Zealand's Strategy for Artificial Intelligence: Investing with confidence.* July 2025.
+6. Ministry of Business, Innovation and Employment. *New Zealand's Strategy for Artificial Intelligence: Investing with confidence.* July 2025. https://www.mbie.govt.nz/business-and-employment/economic-growth/digital-policy/new-zealands-ai-strategy-investing-with-confidence
 
-7. DPMC Multi-Stakeholder Group. *Strengthening civil society resilience to mis- and disinformation in Aotearoa New Zealand.* March 2024.
+7. DPMC Multi-Stakeholder Group. *Strengthening civil society resilience to mis- and disinformation in Aotearoa New Zealand.* March 2024. https://www.dpmc.govt.nz/publications/strengthening-civil-society-resilience-mis-and-disinformation-aotearoa-new-zealand
 
-8. Ministry of Justice. *Independent Electoral Review: Final Report.* November 2023.
+8. Ministry of Justice. *Independent Electoral Review: Final Report.* November 2023. https://www.justice.govt.nz/justice-sector-policy/constitutional-issues-and-human-rights/independent-electoral-review/
 
 9. International Foundation for Electoral Systems. *The Romanian 2024 Election Annulment.* https://www.ifes.org/publications/romanian-2024-election-annulment-addressing-emerging-threats-electoral-integrity
 
-10. NPR. *How deepfakes and AI memes affected global elections in 2024.* December 2024.
+10. NPR. *How deepfakes and AI memes affected global elections in 2024.* December 2024. https://www.npr.org/2024/12/21/nx-s1-5220301/deepfakes-memes-artificial-intelligence-elections
 
 11. Centre for Governance Innovation. *Then and Now: AI Electoral Interference in 2025.* https://www.cigionline.org/articles/then-and-now-how-does-ai-electoral-interference-compare-in-2025/
 
 12. Harvard Ash Center. *The Apocalypse That Wasn't: AI in 2024 Elections.* https://ash.harvard.edu/articles/the-apocalypse-that-wasnt/
 
-13. University of Waikato. *Playing politics with AI: Why NZ needs rules on the use of fake images in election campaigns.* https://www.waikato.ac.nz/news-events/news/playing-politics-with-ai/
+13. University of Waikato. *Playing politics with AI: Why NZ needs rules on the use of fake images in election campaigns.* https://www.waikato.ac.nz/int/news-events/news/playing-politics-with-ai-why-nz-needs-rules-on-the-use-of-fake-images-in-election-campaigns/
 
-14. Pew Research Center. *Views of AI Around the World.* October 2025.
+14. Pew Research Center. *Views of AI Around the World.* October 2025. https://www.pewresearch.org/global/2025/10/15/how-people-around-the-world-view-ai/
 
 15. Advertising Standards Authority. *Spotlight on General Election Advertising.* https://asa.co.nz/2023/08/09/spotlight-on-general-election-advertising/
 
 16. Broadcasting Standards Authority. *Election Programmes Code.* https://www.bsa.govt.nz/broadcasting-standards/election-code/
 
-17. Carnegie Endowment for International Peace. *Can Democracy Survive the Disruptive Power of AI?* December 2024.
+17. Carnegie Endowment for International Peace. *Can Democracy Survive the Disruptive Power of AI?* December 2024. https://carnegieendowment.org/research/2024/12/can-democracy-survive-the-disruptive-power-of-ai
 
-18. Brennan Center for Justice. *Gauging the AI Threat to Free and Fair Elections.* March 2025.
+18. Brennan Center for Justice. *Gauging the AI Threat to Free and Fair Elections.* March 2025. https://www.brennancenter.org/our-work/analysis-opinion/gauging-ai-threat-free-and-fair-elections
 
 19. Catalyst Cloud. *Price List.* https://catalystcloud.nz/pricing/price-list/ (Prices effective 1 June 2025.)
 
