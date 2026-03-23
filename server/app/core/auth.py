@@ -101,9 +101,31 @@ async def require_admin(user: PartyUser = Depends(get_current_user)) -> PartyUse
 
 
 async def require_submitter(user: PartyUser = Depends(get_current_user)) -> PartyUser:
-    if user.role not in (UserRole.ADMIN, UserRole.SUBMITTER):
+    if user.role not in (UserRole.ADMIN, UserRole.SUBMITTER, UserRole.CANDIDATE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Submitter access required",
+        )
+    return user
+
+
+async def require_party_admin(user: PartyUser = Depends(get_current_user)) -> PartyUser:
+    """Dependency that requires ADMIN role (party-scoped admin)."""
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Party admin access required",
+        )
+    return user
+
+
+async def require_electoral_commission(
+    user: PartyUser = Depends(get_current_user),
+) -> PartyUser:
+    """Dependency that requires ELECTORAL_COMMISSION role."""
+    if user.role != UserRole.ELECTORAL_COMMISSION:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Electoral Commission access required",
         )
     return user

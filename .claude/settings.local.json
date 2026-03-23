@@ -48,7 +48,11 @@
       "Bash(NODE_ENV=development npx next dev:*)",
       "Bash(./venv/Scripts/uvicorn.exe:*)",
       "Bash(git update-index:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(sudo docker compose:*)",
+      "Bash(sudo docker ps:*)",
+      "Bash(python3:*)",
+      "Bash(chmod:*)"
     ],
     "additionalDirectories": [
       "d:\\git\\PoliticalImageVerification\\client\\src\\app\\verify"

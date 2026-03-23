@@ -18,7 +18,9 @@ class PartyStatus(str, PyEnum):
 class UserRole(str, PyEnum):
     ADMIN = "admin"
     SUBMITTER = "submitter"
+    CANDIDATE = "candidate"
     VIEWER = "viewer"
+    ELECTORAL_COMMISSION = "electoral_commission"
 
 
 class Party(Base):
@@ -73,6 +75,10 @@ class PartyUser(Base):
     default_statement_position: Mapped[str] = mapped_column(
         String(20), default="bottom-left", nullable=False, server_default="bottom-left"
     )
+    promoter_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
+    promoter_statement_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     email_verified_for_processing: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
@@ -80,6 +86,12 @@ class PartyUser(Base):
         String(64), nullable=True
     )
     email_verification_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    password_reset_token_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    password_reset_expires: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

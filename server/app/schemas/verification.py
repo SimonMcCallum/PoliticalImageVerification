@@ -17,6 +17,9 @@ class VerificationResponse(BaseModel):
     registered_date: datetime | None = None
     pdq_distance: int | None = None
     phash_distance: int | None = None
+    # OCR-detected promoter info (when image is unverified but has promoter text)
+    promoter_detected: bool = False
+    promoter_party_name: str | None = None
 
 
 class VerificationByIdResponse(BaseModel):

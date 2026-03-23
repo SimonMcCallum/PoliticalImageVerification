@@ -10,6 +10,10 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    party_id: str | None = None
+    role: str | None = None
+    default_statement_position: str | None = None
+    has_user_promoter_statement: bool = False
 
 
 class MFASetupResponse(BaseModel):

@@ -20,8 +20,11 @@ class AssetResponse(BaseModel):
     badge_url: str | None
     qr_code_url: str | None
     promoter_image_url: str | None = None
+    thumbnail_url: str | None = None
     metadata: dict | None
     promoter_check: dict | None = None
+    auto_promoter_added: bool = False
+    promoter_already_present: bool = False
     status: AssetStatus
     created_at: datetime
     expires_at: datetime | None
@@ -36,6 +39,7 @@ class AssetListItem(BaseModel):
     file_size: int
     status: AssetStatus
     created_at: datetime
+    thumbnail_url: str | None = None
 
     model_config = {"from_attributes": True}
 

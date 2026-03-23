@@ -5,6 +5,7 @@ WORKDIR /app
 # Install system dependencies for image processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     libjpeg-dev \
     libpng-dev \
     libwebp-dev \
@@ -18,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/storage/assets /app/storage/badges /app/storage/qrcodes /app/storage/promoter /app/storage/email_incoming /app/storage/email_results
+RUN mkdir -p /app/storage/assets /app/storage/badges /app/storage/qrcodes /app/storage/promoter /app/storage/thumbnails /app/storage/email_incoming /app/storage/email_results
 
 # Create non-root user for production
 RUN groupadd -r pivs && useradd --no-log-init -r -g pivs pivs \
@@ -33,7 +34,9 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 # ---------- Production target ----------
 FROM base AS production
 
-# Install gunicorn for production
+# Switch to root to install, then back to pivs
+USER root
 RUN pip install --no-cache-dir gunicorn==23.0.0
+USER pivs
 
 CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]

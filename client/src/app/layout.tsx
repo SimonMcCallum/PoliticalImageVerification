@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "NZ Political Image Verification",
@@ -24,27 +25,33 @@ export default function RootLayout({
             alignItems: "center",
           }}
         >
-          <a href="/" style={{ color: "white", textDecoration: "none" }}>
+          <Link href="/" style={{ color: "white", textDecoration: "none" }}>
             <h1 style={{ margin: 0, fontSize: "1.25rem" }}>
               NZ Political Image Verification
             </h1>
-          </a>
+          </Link>
           <nav style={{ display: "flex", gap: "1.5rem" }}>
-            <a href="/" style={{ color: "#F26522", textDecoration: "none" }}>
+            <Link href="/" style={{ color: "#F26522", textDecoration: "none" }}>
               Verify
-            </a>
-            <a
+            </Link>
+            <Link
               href="/party"
               style={{ color: "#F26522", textDecoration: "none" }}
             >
               Party Portal
-            </a>
-            <a
+            </Link>
+            <Link
               href="/party/promoter-preview"
               style={{ color: "#F26522", textDecoration: "none" }}
             >
               Promoter Preview
-            </a>
+            </Link>
+            <Link
+              href="/ec"
+              style={{ color: "#F26522", textDecoration: "none" }}
+            >
+              EC Dashboard
+            </Link>
           </nav>
         </header>
         <main>{children}</main>
@@ -65,6 +72,9 @@ export default function RootLayout({
           <p style={{ margin: "0.25rem 0 0" }}>
             An open-source tool for verifying the authenticity of political
             campaign images.
+          </p>
+          <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#666" }}>
+            v0.2.0 &mdash; Build 2025-02-16a
           </p>
         </footer>
       </body>

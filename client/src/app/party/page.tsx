@@ -3,7 +3,7 @@
 import "../globals.css";
 import { useState, useEffect, FormEvent } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 interface Asset {
   id: string;
@@ -18,7 +18,10 @@ interface Asset {
   verification_url: string;
   qr_code_url: string;
   promoter_image_url: string | null;
+  thumbnail_url: string | null;
   promoter_check: PromoterCheck | null;
+  auto_promoter_added: boolean;
+  promoter_already_present: boolean;
 }
 
 interface PromoterCheck {
@@ -46,18 +49,57 @@ export default function PartyPortal() {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<Asset | null>(null);
 
-  // Promoter statement state
+  // Role and party info
+  const [role, setRole] = useState<string | null>(null);
+  const [partyId, setPartyId] = useState<string | null>(null);
+
+  // Party-level promoter statement state
   const [promoterStatement, setPromoterStatement] = useState("");
   const [promoterUpdatedAt, setPromoterUpdatedAt] = useState<string | null>(null);
   const [editingStatement, setEditingStatement] = useState(false);
   const [statementDraft, setStatementDraft] = useState("");
   const [savingStatement, setSavingStatement] = useState(false);
-  const [partyId, setPartyId] = useState<string | null>(null);
+
+  // User-level promoter statement state
+  const [userPromoterStatement, setUserPromoterStatement] = useState<string | null>(null);
+  const [userPromoterUpdatedAt, setUserPromoterUpdatedAt] = useState<string | null>(null);
+  const [editingUserStatement, setEditingUserStatement] = useState(false);
+  const [userStatementDraft, setUserStatementDraft] = useState("");
+  const [savingUserStatement, setSavingUserStatement] = useState(false);
+
+  // Effective promoter statement (user's own or party fallback)
+  const effectiveStatement = userPromoterStatement || promoterStatement;
+
+  // Members management (admin only)
+  interface PartyMember {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    is_active: boolean;
+    has_promoter_statement: boolean;
+    last_login: string | null;
+    created_at: string;
+  }
+  const [members, setMembers] = useState<PartyMember[]>([]);
+  const [showMembers, setShowMembers] = useState(false);
+  const [creatingCandidate, setCreatingCandidate] = useState(false);
+  const [candidateForm, setCandidateForm] = useState({ username: "", email: "", password: "", promoter_statement: "" });
+  const [memberActionMsg, setMemberActionMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Upload options
   const [addPromoter, setAddPromoter] = useState(false);
   const [checkPromoter, setCheckPromoter] = useState(false);
   const [uploadPosition, setUploadPosition] = useState("bottom-left");
+
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Batch mode state
   const [batchFile, setBatchFile] = useState<File | null>(null);
@@ -91,15 +133,21 @@ export default function PartyPortal() {
       const data = await res.json();
       setToken(data.access_token);
       if (data.party_id) setPartyId(data.party_id);
+      if (data.role) setRole(data.role);
       if (data.default_statement_position) {
         setDefaultPosition(data.default_statement_position);
         setUploadPosition(data.default_statement_position);
         setBatchPosition(data.default_statement_position);
       }
-      await Promise.all([
+      const loads: Promise<void>[] = [
         loadAssets(data.access_token),
         loadPromoterStatement(data.access_token, data.party_id),
-      ]);
+        loadUserPromoterStatement(data.access_token),
+      ];
+      if (data.role === "admin") {
+        loads.push(loadMembers(data.access_token, data.party_id));
+      }
+      await Promise.all(loads);
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : "Login failed");
     }
@@ -128,6 +176,105 @@ export default function PartyPortal() {
       }
     } catch {
       // Statement not set yet
+    }
+  }
+
+  async function loadUserPromoterStatement(accessToken: string) {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/parties/me/promoter-statement`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserPromoterStatement(data.user_statement || null);
+        setUserPromoterUpdatedAt(data.updated_at);
+      }
+    } catch {
+      // Not set yet
+    }
+  }
+
+  async function loadMembers(accessToken: string, pid: string) {
+    if (!pid) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/parties/${pid}/members`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        setMembers(await res.json());
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  async function handleSaveUserStatement() {
+    if (!token) return;
+    setSavingUserStatement(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/parties/me/promoter-statement`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ statement: userStatementDraft }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to save");
+      }
+      const data = await res.json();
+      setUserPromoterStatement(data.user_statement);
+      setUserPromoterUpdatedAt(data.updated_at);
+      setEditingUserStatement(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save statement");
+    } finally {
+      setSavingUserStatement(false);
+    }
+  }
+
+  async function handleClearUserStatement() {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/parties/me/promoter-statement`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setUserPromoterStatement(null);
+        setUserPromoterUpdatedAt(null);
+      }
+    } catch {
+      alert("Failed to clear statement");
+    }
+  }
+
+  async function handleCreateCandidate() {
+    if (!token || !partyId) return;
+    setCreatingCandidate(true);
+    setMemberActionMsg(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/parties/${partyId}/candidates`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(candidateForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to create candidate");
+      }
+      setCandidateForm({ username: "", email: "", password: "", promoter_statement: "" });
+      setMemberActionMsg({ type: "success", text: "Candidate account created" });
+      await loadMembers(token, partyId);
+    } catch (err) {
+      setMemberActionMsg({ type: "error", text: err instanceof Error ? err.message : "Failed" });
+    } finally {
+      setCreatingCandidate(false);
     }
   }
 
@@ -180,6 +327,50 @@ export default function PartyPortal() {
       alert(err instanceof Error ? err.message : "Failed to save position");
     } finally {
       setSavingPosition(false);
+    }
+  }
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/change-password`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to change password");
+      }
+
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Failed to change password");
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -339,6 +530,9 @@ export default function PartyPortal() {
             setAssets([]);
             setPromoterStatement("");
             setPartyId(null);
+            setRole(null);
+            setUserPromoterStatement(null);
+            setMembers([]);
           }}
         >
           Log Out
@@ -462,6 +656,376 @@ export default function PartyPortal() {
         </div>
       </div>
 
+      {/* Your Promoter Statement (per-user) */}
+      <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <h3 style={{ marginTop: 0 }}>Your Promoter Statement</h3>
+        <p style={{ color: "#666666", fontSize: "0.875rem", marginTop: 0 }}>
+          Set your own promoter statement to override the party default for images you submit.
+          If not set, the party&apos;s default statement will be used.
+        </p>
+
+        {!editingUserStatement ? (
+          <>
+            {userPromoterStatement ? (
+              <div
+                style={{
+                  background: "#E3F2FD",
+                  border: "1px solid #1565C0",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#1565C0", fontWeight: 500 }}>
+                  Your personal statement (overrides party default):
+                </p>
+                <p style={{ margin: "0.25rem 0 0", fontStyle: "italic" }}>
+                  &ldquo;{userPromoterStatement}&rdquo;
+                </p>
+                {userPromoterUpdatedAt && (
+                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#999999" }}>
+                    Last updated: {new Date(userPromoterUpdatedAt).toLocaleString("en-NZ")}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: "#F5F5F5",
+                  border: "1px solid #D8D8D8",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                <p style={{ margin: 0, color: "#666" }}>
+                  Using party default: {promoterStatement ? (
+                    <em>&ldquo;{promoterStatement}&rdquo;</em>
+                  ) : (
+                    <span style={{ color: "#D4551A" }}>No party statement set</span>
+                  )}
+                </p>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setUserStatementDraft(userPromoterStatement || "");
+                  setEditingUserStatement(true);
+                }}
+              >
+                {userPromoterStatement ? "Edit Your Statement" : "Set Your Statement"}
+              </button>
+              {userPromoterStatement && (
+                <button
+                  className="btn"
+                  style={{ background: "#D8D8D8" }}
+                  onClick={handleClearUserStatement}
+                >
+                  Clear (Use Party Default)
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="form-group">
+              <label className="label">Your Promoter Statement</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={userStatementDraft}
+                onChange={(e) => setUserStatementDraft(e.target.value)}
+                placeholder="e.g. Authorised by J. Smith, 42 Queen St, Wellington"
+                maxLength={500}
+                style={{ resize: "vertical" }}
+              />
+              <p style={{ fontSize: "0.75rem", color: "#999999", margin: "0.25rem 0 0" }}>
+                {userStatementDraft.length}/500 characters
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveUserStatement}
+                disabled={savingUserStatement || userStatementDraft.length < 5}
+              >
+                {savingUserStatement ? "Saving..." : "Save"}
+              </button>
+              <button
+                className="btn"
+                style={{ background: "#D8D8D8" }}
+                onClick={() => setEditingUserStatement(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Change Password */}
+      <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <div
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+          onClick={() => { setShowChangePassword(!showChangePassword); setPasswordError(null); setPasswordSuccess(false); }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: 0 }}>Change Password</h3>
+          <span style={{ color: "#666", fontSize: "0.875rem" }}>
+            {showChangePassword ? "Hide" : "Show"}
+          </span>
+        </div>
+
+        {showChangePassword && (
+          <form onSubmit={handleChangePassword} style={{ marginTop: "1rem" }}>
+            <div className="form-group">
+              <label className="label">Current Password</label>
+              <input
+                className="input"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">New Password</label>
+              <input
+                className="input"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+              <p style={{ fontSize: "0.75rem", color: "#999", margin: "0.25rem 0 0" }}>
+                Minimum 8 characters
+              </p>
+            </div>
+            <div className="form-group">
+              <label className="label">Confirm New Password</label>
+              <input
+                className="input"
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+            </div>
+            {passwordError && (
+              <p style={{ color: "#DC3545", margin: "0 0 1rem" }}>{passwordError}</p>
+            )}
+            {passwordSuccess && (
+              <p style={{ color: "#28A745", margin: "0 0 1rem" }}>Password changed successfully.</p>
+            )}
+            <button type="submit" className="btn btn-primary" disabled={changingPassword}>
+              {changingPassword ? "Changing..." : "Change Password"}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Manage Members (admin only) */}
+      {role === "admin" && (
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <div
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+            onClick={() => setShowMembers(!showMembers)}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Manage Members</h3>
+            <span style={{ color: "#666", fontSize: "0.875rem" }}>
+              {showMembers ? "Hide" : `Show (${members.length})`}
+            </span>
+          </div>
+
+          {showMembers && (
+            <div style={{ marginTop: "1rem" }}>
+              {memberActionMsg && (
+                <div
+                  style={{
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    marginBottom: "1rem",
+                    background: memberActionMsg.type === "success" ? "#E8F5E9" : "#FFEBEE",
+                    border: `1px solid ${memberActionMsg.type === "success" ? "#28A745" : "#DC3545"}`,
+                    color: memberActionMsg.type === "success" ? "#1B5E20" : "#B71C1C",
+                  }}
+                >
+                  {memberActionMsg.text}
+                </div>
+              )}
+
+              {/* Create Candidate Form */}
+              <div style={{
+                background: "#F5F5F5",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginBottom: "1rem",
+              }}>
+                <p style={{ margin: "0 0 0.75rem", fontWeight: 500, fontSize: "0.875rem" }}>
+                  Create Candidate Account
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="label" style={{ fontSize: "0.75rem" }}>Username</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={candidateForm.username}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, username: e.target.value })}
+                      placeholder="username"
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="label" style={{ fontSize: "0.75rem" }}>Email</label>
+                    <input
+                      className="input"
+                      type="email"
+                      value={candidateForm.email}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, email: e.target.value })}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="label" style={{ fontSize: "0.75rem" }}>Password</label>
+                    <input
+                      className="input"
+                      type="password"
+                      value={candidateForm.password}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, password: e.target.value })}
+                      placeholder="Min 8 characters"
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="label" style={{ fontSize: "0.75rem" }}>Promoter Statement (optional)</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={candidateForm.promoter_statement}
+                      onChange={(e) => setCandidateForm({ ...candidateForm, promoter_statement: e.target.value })}
+                      placeholder="Authorised by..."
+                    />
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  style={{ marginTop: "0.75rem" }}
+                  disabled={creatingCandidate || !candidateForm.username || !candidateForm.email || candidateForm.password.length < 8}
+                  onClick={handleCreateCandidate}
+                >
+                  {creatingCandidate ? "Creating..." : "Create Candidate"}
+                </button>
+              </div>
+
+              {/* Members Table */}
+              {members.length === 0 ? (
+                <p style={{ color: "#999" }}>No members found.</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #D8D8D8" }}>
+                        <th style={{ textAlign: "left", padding: "0.5rem" }}>Username</th>
+                        <th style={{ textAlign: "left", padding: "0.5rem" }}>Role</th>
+                        <th style={{ textAlign: "center", padding: "0.5rem" }}>Promoter</th>
+                        <th style={{ textAlign: "center", padding: "0.5rem" }}>Active</th>
+                        <th style={{ textAlign: "left", padding: "0.5rem" }}>Last Login</th>
+                        <th style={{ textAlign: "left", padding: "0.5rem" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map((m) => (
+                        <tr key={m.id} style={{ borderBottom: "1px solid #D8D8D8" }}>
+                          <td style={{ padding: "0.5rem", fontWeight: 500 }}>{m.username}</td>
+                          <td style={{ padding: "0.5rem" }}>
+                            <span style={{
+                              fontSize: "0.75rem",
+                              background: m.role === "candidate" ? "#E3F2FD" : m.role === "admin" ? "#FFF3EC" : "#F5F5F5",
+                              color: m.role === "candidate" ? "#1565C0" : m.role === "admin" ? "#D4551A" : "#333",
+                              padding: "0.125rem 0.5rem",
+                              borderRadius: "4px",
+                            }}>
+                              {m.role}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center", padding: "0.5rem" }}>
+                            {m.has_promoter_statement ? (
+                              <span style={{ color: "#28A745" }}>&#x2713;</span>
+                            ) : (
+                              <span style={{ color: "#999" }}>-</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center", padding: "0.5rem" }}>
+                            {m.is_active ? (
+                              <span style={{ color: "#28A745" }}>&#x2713;</span>
+                            ) : (
+                              <span style={{ color: "#DC3545" }}>&#x2717;</span>
+                            )}
+                          </td>
+                          <td style={{ padding: "0.5rem", fontSize: "0.75rem", color: "#666" }}>
+                            {m.last_login ? new Date(m.last_login).toLocaleString("en-NZ") : "Never"}
+                          </td>
+                          <td style={{ padding: "0.5rem" }}>
+                            {m.role !== "admin" && m.role !== "electoral_commission" && (
+                              <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+                                <button
+                                  className="btn"
+                                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "#FFF3EC", color: "#D4551A" }}
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${API_BASE}/api/v1/parties/${partyId}/members/${m.id}/reset-password`, {
+                                        method: "POST",
+                                        headers: { Authorization: `Bearer ${token}` },
+                                      });
+                                      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+                                      setMemberActionMsg({ type: "success", text: `Password reset sent for ${m.username}` });
+                                    } catch (err) {
+                                      setMemberActionMsg({ type: "error", text: err instanceof Error ? err.message : "Failed" });
+                                    }
+                                  }}
+                                >
+                                  Reset PW
+                                </button>
+                                <button
+                                  className="btn"
+                                  style={{
+                                    padding: "0.25rem 0.5rem", fontSize: "0.75rem",
+                                    background: m.is_active ? "#FFEBEE" : "#E8F5E9",
+                                    color: m.is_active ? "#B71C1C" : "#1B5E20",
+                                  }}
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${API_BASE}/api/v1/parties/${partyId}/members/${m.id}/active`, {
+                                        method: "PATCH",
+                                        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                                        body: JSON.stringify({ is_active: !m.is_active }),
+                                      });
+                                      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+                                      setMembers(members.map((x) => x.id === m.id ? { ...x, is_active: !m.is_active } : x));
+                                      setMemberActionMsg({ type: "success", text: `${m.username} ${m.is_active ? "deactivated" : "activated"}` });
+                                    } catch (err) {
+                                      setMemberActionMsg({ type: "error", text: err instanceof Error ? err.message : "Failed" });
+                                    }
+                                  }}
+                                >
+                                  {m.is_active ? "Deactivate" : "Activate"}
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Upload Form - Enhanced with promoter options */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ marginTop: 0 }}>Register a Campaign Image</h3>
@@ -506,11 +1070,11 @@ export default function PartyPortal() {
                 type="checkbox"
                 checked={addPromoter}
                 onChange={(e) => setAddPromoter(e.target.checked)}
-                disabled={!promoterStatement}
+                disabled={!effectiveStatement}
               />
-              <span style={{ fontSize: "0.875rem", color: promoterStatement ? "#333333" : "#999999" }}>
+              <span style={{ fontSize: "0.875rem", color: effectiveStatement ? "#333333" : "#999999" }}>
                 Add promoter statement to image
-                {!promoterStatement && " (set statement first)"}
+                {!effectiveStatement && " (set statement first)"}
               </span>
             </label>
 
@@ -583,8 +1147,54 @@ export default function PartyPortal() {
               </tbody>
             </table>
 
+            {/* Auto-promoter warning */}
+            {uploadResult.auto_promoter_added && (
+              <div
+                style={{
+                  marginTop: "0.75rem",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  background: "#FFF3E0",
+                  border: "1px solid #F26522",
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 600, color: "#D4551A" }}>
+                  Promoter Statement Added Automatically
+                </p>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem" }}>
+                  Your image did not contain a promoter statement. One has been added
+                  automatically. Please download the updated image below.
+                </p>
+                {uploadResult.promoter_image_url && (
+                  <a
+                    href={`${API_BASE}${uploadResult.promoter_image_url}`}
+                    className="btn btn-primary"
+                    style={{ marginTop: "0.5rem", display: "inline-block" }}
+                  >
+                    Download Updated Image (with Promoter)
+                  </a>
+                )}
+              </div>
+            )}
+
+            {uploadResult.promoter_already_present && (
+              <div
+                style={{
+                  marginTop: "0.75rem",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  background: "#E8F5E9",
+                  border: "1px solid #28A745",
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 500, fontSize: "0.875rem", color: "#1B5E20" }}>
+                  Promoter statement already present in image
+                </p>
+              </div>
+            )}
+
             {/* OCR check result */}
-            {uploadResult.promoter_check && (
+            {uploadResult.promoter_check && !uploadResult.auto_promoter_added && !uploadResult.promoter_already_present && (
               <div
                 style={{
                   marginTop: "0.75rem",
@@ -611,6 +1221,75 @@ export default function PartyPortal() {
                 )}
               </div>
             )}
+
+            {/* Download buttons */}
+            <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <a
+                href={`${API_BASE}/api/v1/assets/${uploadResult.id}/download/original`}
+                className="btn"
+                style={{ background: "#F5F5F5", fontSize: "0.75rem" }}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  const res = await fetch(`${API_BASE}/api/v1/assets/${uploadResult.id}/download/original`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (res.ok) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = `original_${uploadResult.verification_id}.png`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }
+                }}
+              >
+                Download Original
+              </a>
+              {uploadResult.promoter_image_url && (
+                <a
+                  href={`${API_BASE}/api/v1/assets/${uploadResult.id}/download/promoter`}
+                  className="btn"
+                  style={{ background: "#F5F5F5", fontSize: "0.75rem" }}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    const res = await fetch(`${API_BASE}/api/v1/assets/${uploadResult.id}/download/promoter`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url; a.download = `promoter_${uploadResult.verification_id}.png`;
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }
+                  }}
+                >
+                  Download Promoter Version
+                </a>
+              )}
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: "0.75rem" }}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_BASE}/api/v1/assets/${uploadResult.id}/share?version=promoter&expire_hours=72`, {
+                      method: "POST",
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      await navigator.clipboard.writeText(data.download_url);
+                      alert(`Share link copied to clipboard!\n\n${data.download_url}\n\nExpires: ${new Date(data.expires_at).toLocaleString("en-NZ")}`);
+                    }
+                  } catch (err) {
+                    alert("Failed to create share link");
+                  }
+                }}
+              >
+                Create Share Link
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -623,7 +1302,7 @@ export default function PartyPortal() {
           This does not register the image as a verified asset.
         </p>
 
-        {!promoterStatement ? (
+        {!effectiveStatement ? (
           <p style={{ color: "#D4551A", fontSize: "0.875rem" }}>
             Set your promoter statement above before using batch mode.
           </p>
@@ -680,15 +1359,16 @@ export default function PartyPortal() {
             >
               <thead>
                 <tr style={{ borderBottom: "2px solid #D8D8D8" }}>
+                  <th style={{ textAlign: "left", padding: "0.5rem" }}>Preview</th>
                   <th style={{ textAlign: "left", padding: "0.5rem" }}>
                     Verification ID
                   </th>
-                  <th style={{ textAlign: "left", padding: "0.5rem" }}>Type</th>
                   <th style={{ textAlign: "left", padding: "0.5rem" }}>Size</th>
                   <th style={{ textAlign: "left", padding: "0.5rem" }}>
                     Status
                   </th>
                   <th style={{ textAlign: "left", padding: "0.5rem" }}>Date</th>
+                  <th style={{ textAlign: "left", padding: "0.5rem" }}>Downloads</th>
                 </tr>
               </thead>
               <tbody>
@@ -697,6 +1377,22 @@ export default function PartyPortal() {
                     key={asset.id}
                     style={{ borderBottom: "1px solid #D8D8D8" }}
                   >
+                    <td style={{ padding: "0.5rem" }}>
+                      {asset.thumbnail_url ? (
+                        <img
+                          src={`${API_BASE}${asset.thumbnail_url}`}
+                          alt="Thumbnail"
+                          style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "4px" }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: "50px", height: "50px", background: "#F5F5F5",
+                          borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.625rem", color: "#999",
+                        }}>N/A</div>
+                      )}
+                    </td>
                     <td
                       style={{
                         padding: "0.5rem",
@@ -705,7 +1401,6 @@ export default function PartyPortal() {
                     >
                       {asset.verification_id}
                     </td>
-                    <td style={{ padding: "0.5rem" }}>{asset.mime_type}</td>
                     <td style={{ padding: "0.5rem" }}>
                       {(asset.file_size / 1024).toFixed(1)} KB
                     </td>
@@ -727,6 +1422,50 @@ export default function PartyPortal() {
                     </td>
                     <td style={{ padding: "0.5rem" }}>
                       {new Date(asset.created_at).toLocaleDateString("en-NZ")}
+                    </td>
+                    <td style={{ padding: "0.5rem" }}>
+                      <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+                        <button
+                          className="btn"
+                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "#F5F5F5" }}
+                          onClick={async () => {
+                            const res = await fetch(`${API_BASE}/api/v1/assets/${asset.id}/download/original`, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url; a.download = `original_${asset.verification_id}.png`;
+                              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }
+                          }}
+                        >
+                          Original
+                        </button>
+                        <button
+                          className="btn"
+                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "#FFF3EC", color: "#D4551A" }}
+                          onClick={async () => {
+                            const res = await fetch(`${API_BASE}/api/v1/assets/${asset.id}/download/promoter`, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url; a.download = `promoter_${asset.verification_id}.png`;
+                              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            } else {
+                              alert("No promoter version available");
+                            }
+                          }}
+                        >
+                          Promoter
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

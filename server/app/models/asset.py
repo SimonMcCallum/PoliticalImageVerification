@@ -48,6 +48,7 @@ class Asset(Base):
     badge_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     promoter_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     qr_code_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    thumbnail_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     verification_id: Mapped[str] = mapped_column(
         String(12), nullable=False, unique=True, index=True
     )

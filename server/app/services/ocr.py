@@ -98,6 +98,62 @@ def _best_substring_match(text: str, target: str) -> tuple[str, float]:
     return best_match, best_ratio
 
 
+def find_promoter_across_parties(
+    image_bytes: bytes,
+    parties: list[tuple[str, str, str]],
+) -> dict:
+    """OCR an image and search for ANY party's promoter statement.
+
+    Args:
+        image_bytes: Image file bytes.
+        parties: List of (party_id, party_name, promoter_statement) tuples.
+
+    Returns:
+        dict with: found, party_id, party_name, confidence, extracted_text
+    """
+    try:
+        extracted_text = extract_text_from_image(image_bytes)
+    except RuntimeError:
+        return {
+            "found": False,
+            "party_id": None,
+            "party_name": None,
+            "confidence": 0.0,
+            "extracted_text": "",
+        }
+
+    if not extracted_text:
+        return {
+            "found": False,
+            "party_id": None,
+            "party_name": None,
+            "confidence": 0.0,
+            "extracted_text": "",
+        }
+
+    best_party_id = None
+    best_party_name = None
+    best_ratio = 0.0
+
+    for party_id, party_name, statement in parties:
+        if not statement:
+            continue
+        _, ratio = _best_substring_match(extracted_text, statement)
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_party_id = party_id
+            best_party_name = party_name
+
+    threshold = settings.PROMOTER_OCR_MATCH_THRESHOLD
+    return {
+        "found": best_ratio >= threshold,
+        "party_id": best_party_id if best_ratio >= threshold else None,
+        "party_name": best_party_name if best_ratio >= threshold else None,
+        "confidence": round(best_ratio, 3),
+        "extracted_text": extracted_text,
+    }
+
+
 def find_promoter_statement(
     image_bytes: bytes,
     expected_statement: str,

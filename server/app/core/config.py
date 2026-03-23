@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     EMAIL_PROCESSING_ADDRESS: str = ""
     EMAIL_POLL_INTERVAL_SECONDS: int = 30
     EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 30
+    EMAIL_SENDING_ENABLED: bool = True
+
+    # Password reset
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 60
 
     # Rate limiting
     RATE_LIMIT_VERIFY_PER_MINUTE: int = 30

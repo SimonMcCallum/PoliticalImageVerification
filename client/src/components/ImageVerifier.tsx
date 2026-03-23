@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 interface VerificationResult {
   verified: boolean;
@@ -16,6 +16,8 @@ interface VerificationResult {
   registered_date?: string;
   pdq_distance?: number;
   phash_distance?: number;
+  promoter_detected?: boolean;
+  promoter_party_name?: string;
 }
 
 export default function ImageVerifier() {
@@ -198,6 +200,22 @@ export default function ImageVerifier() {
                   </p>
                 </div>
               </div>
+              {result.promoter_detected && result.promoter_party_name && (
+                <div style={{
+                  marginTop: "1rem", padding: "1rem",
+                  background: "#FFF8E1", border: "1px solid #FFC107",
+                  borderRadius: "8px"
+                }}>
+                  <p style={{ margin: 0, fontWeight: 600 }}>
+                    Promoter Statement Detected
+                  </p>
+                  <p style={{ margin: "0.25rem 0 0", color: "#555" }}>
+                    A promoter statement for <strong>{result.promoter_party_name}</strong> was
+                    detected in this image via OCR, but the image itself is not registered in our
+                    verification system.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>

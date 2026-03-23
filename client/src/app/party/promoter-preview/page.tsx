@@ -2,8 +2,9 @@
 
 import "../../globals.css";
 import { useState, useRef, useEffect, FormEvent } from "react";
+import Link from "next/link";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const POSITIONS = [
   { value: "bottom-left", label: "Bottom Left" },
@@ -279,16 +280,16 @@ export default function PromoterPreview() {
     <div className="container" style={{ maxWidth: "900px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h2 style={{ margin: 0 }}>Promoter Statement Preview</h2>
-        <a href="/party" style={{ color: "#F26522", textDecoration: "none", fontSize: "0.875rem" }}>
+        <Link href="/party" style={{ color: "#F26522", textDecoration: "none", fontSize: "0.875rem" }}>
           Back to Party Portal
-        </a>
+        </Link>
       </div>
 
       {!promoterStatement ? (
         <div className="card">
           <div style={{ background: "#FFF3EC", border: "1px solid #F26522", borderRadius: "8px", padding: "1rem" }}>
             <p style={{ margin: 0, color: "#D4551A" }}>
-              No promoter statement set. Go to the <a href="/party" style={{ color: "#F26522" }}>Party Portal</a> to set one first.
+              No promoter statement set. Go to the <Link href="/party" style={{ color: "#F26522" }}>Party Portal</Link> to set one first.
             </p>
           </div>
         </div>

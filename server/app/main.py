@@ -19,7 +19,11 @@ import logging
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, parties, assets, verification, email_processing
+from app.api import auth, parties, assets, verification, email_processing, downloads, ec_dashboard, ec_user_management, party_admin
+
+# Import models so SQLAlchemy creates their tables
+import app.models.share_link  # noqa: F401
+import app.models.geo_stats  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +108,10 @@ app.include_router(parties.router, prefix=settings.API_V1_PREFIX)
 app.include_router(assets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(verification.router, prefix=settings.API_V1_PREFIX)
 app.include_router(email_processing.router, prefix=settings.API_V1_PREFIX)
+app.include_router(downloads.router, prefix=settings.API_V1_PREFIX)
+app.include_router(ec_dashboard.router, prefix=settings.API_V1_PREFIX)
+app.include_router(ec_user_management.router, prefix=settings.API_V1_PREFIX)
+app.include_router(party_admin.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")
@@ -118,4 +126,4 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "0.2.0", "build": "2025-02-16a"}

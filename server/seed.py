@@ -22,6 +22,7 @@ NZ_PARTIES = [
     ("New Zealand First", "NZ First"),
     ("Te Pāti Māori", "Te Pāti Māori"),
     ("The Opportunities Party", "TOP"),
+    ("Independent Candidates", "Independent"),
 ]
 
 
@@ -74,6 +75,42 @@ async def seed():
         )
         db.add(system_admin)
         print("  Created: sysadmin / admin_changeme (system admin)")
+
+        # Create an Electoral Commission user (for EC dashboard)
+        ec_user = PartyUser(
+            party_id=parties[0].id,
+            username="ec_admin",
+            email_encrypted=encrypt_string("admin@elections.govt.nz"),
+            hashed_password=hash_password("ec_changeme"),
+            role=UserRole.ELECTORAL_COMMISSION,
+        )
+        db.add(ec_user)
+        print("  Created: ec_admin / ec_changeme (Electoral Commission)")
+
+        # Create a sample candidate in the Labour party
+        candidate_user = PartyUser(
+            party_id=parties[0].id,
+            username="candidate_labour",
+            email_encrypted=encrypt_string("candidate@labour.org.nz"),
+            hashed_password=hash_password("candidate_changeme"),
+            role=UserRole.CANDIDATE,
+            promoter_statement="Authorised by J. Smith, 42 Queen St, Wellington",
+        )
+        db.add(candidate_user)
+        print("  Created: candidate_labour / candidate_changeme (Candidate, Labour)")
+
+        # Create a sample independent candidate
+        independent_party = [p for p in parties if p.short_name == "Independent"][0]
+        independent_user = PartyUser(
+            party_id=independent_party.id,
+            username="independent_jones",
+            email_encrypted=encrypt_string("jones@independent.nz"),
+            hashed_password=hash_password("indie_changeme"),
+            role=UserRole.CANDIDATE,
+            promoter_statement="Authorised by M. Jones, 10 Main Rd, Auckland",
+        )
+        db.add(independent_user)
+        print("  Created: independent_jones / indie_changeme (Independent Candidate)")
 
         await db.commit()
         print(f"\nSeeded {len(parties)} parties with admin accounts.")

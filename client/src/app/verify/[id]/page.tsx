@@ -3,8 +3,9 @@
 import "../../globals.css";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 interface VerificationByIdResult {
   verified: boolean;
@@ -202,9 +203,9 @@ export default function VerifyByIdPage() {
       )}
 
       <div style={{ textAlign: "center", marginTop: "2rem" }}>
-        <a href="/" className="btn btn-primary">
+        <Link href="/" className="btn btn-primary">
           Verify another image
-        </a>
+        </Link>
       </div>
     </div>
   );

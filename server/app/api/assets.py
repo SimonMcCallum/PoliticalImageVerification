@@ -20,7 +20,8 @@ from app.services.badge import generate_badge_overlay, generate_qr_code
 from app.services.encryption import encrypt_data, generate_dek, encrypt_dek, encrypt_string
 from app.services.hashing import compute_all_hashes
 from app.services.promoter_overlay import overlay_promoter_statement, VALID_POSITIONS
-from app.services.storage import store_blob
+from app.services.storage import store_blob, retrieve_blob
+from app.services.thumbnail import generate_thumbnail
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
@@ -32,6 +33,11 @@ ALLOWED_MIME_TYPES = {
     "application/pdf",
 }
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+
+def _get_effective_promoter_statement(user: PartyUser, party: Party) -> str | None:
+    """Return the user's own promoter statement, falling back to the party default."""
+    return user.promoter_statement or party.promoter_statement
 
 
 def _generate_verification_id() -> str:
@@ -81,37 +87,50 @@ async def submit_asset(
     party_result = await db.execute(select(Party).where(Party.id == user.party_id))
     party = party_result.scalar_one()
 
-    # OCR check for promoter statement if requested
+    # Auto-detect promoter statement via OCR
+    auto_promoter_added = False
+    promoter_already_present = False
     promoter_check_result = None
-    if check_promoter_statement:
-        if not party.promoter_statement:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No promoter statement set for this party. Set one first via the party settings.",
-            )
-        from app.services.ocr import find_promoter_statement
-        promoter_check_result = find_promoter_statement(image_bytes, party.promoter_statement)
-
-    # Add promoter statement overlay if requested
     promoter_storage_key = None
-    if add_promoter_statement:
-        if not party.promoter_statement:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No promoter statement set for this party. Set one first via the party settings.",
-            )
-        position = promoter_position or user.default_statement_position
-        if position not in VALID_POSITIONS:
-            position = "bottom-left"
 
-        promoter_bytes = overlay_promoter_statement(
-            image_bytes, party.promoter_statement, position=position
+    effective_statement = _get_effective_promoter_statement(user, party)
+
+    if effective_statement:
+        # Always run OCR to check for existing promoter statement
+        from app.services.ocr import find_promoter_statement
+        promoter_check_result = find_promoter_statement(
+            image_bytes, effective_statement
         )
-        # Encrypt and store the promoter-stamped version
-        promoter_dek = generate_dek()
-        encrypted_promoter, promoter_nonce = encrypt_data(promoter_bytes, promoter_dek)
-        encrypted_promoter_dek = encrypt_dek(promoter_dek)
-        promoter_storage_key = await store_blob(encrypted_promoter, prefix="promoter")
+
+        if promoter_check_result.get("found"):
+            promoter_already_present = True
+        else:
+            # Promoter not found -- auto-add it
+            position = promoter_position or user.default_statement_position
+            if position not in VALID_POSITIONS:
+                position = "bottom-left"
+
+            promoter_bytes = overlay_promoter_statement(
+                image_bytes, effective_statement, position=position
+            )
+            promoter_storage_key = await store_blob(promoter_bytes, prefix="promoter")
+            auto_promoter_added = True
+    elif add_promoter_statement:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No promoter statement set. Set one via your profile or party settings.",
+        )
+
+    # If user explicitly requested promoter and it wasn't auto-added (already present)
+    if add_promoter_statement and not promoter_storage_key and not promoter_already_present:
+        if effective_statement:
+            position = promoter_position or user.default_statement_position
+            if position not in VALID_POSITIONS:
+                position = "bottom-left"
+            promoter_bytes = overlay_promoter_statement(
+                image_bytes, effective_statement, position=position
+            )
+            promoter_storage_key = await store_blob(promoter_bytes, prefix="promoter")
 
     # Compute hashes on the original image (before any badge overlay)
     hashes = compute_all_hashes(image_bytes)
@@ -136,6 +155,10 @@ async def submit_asset(
     badge_dek = generate_dek()
     encrypted_badge, badge_nonce = encrypt_data(badge_bytes, badge_dek)
     badge_storage_key = await store_blob(encrypted_badge, prefix="badges")
+
+    # Generate and store thumbnail (unencrypted, low-res preview)
+    thumb_bytes = generate_thumbnail(image_bytes)
+    thumbnail_storage_key = await store_blob(thumb_bytes, prefix="thumbnails")
 
     # Parse metadata JSON
     metadata_dict = None
@@ -164,6 +187,7 @@ async def submit_asset(
         badge_storage_key=badge_storage_key,
         promoter_storage_key=promoter_storage_key,
         qr_code_storage_key=qr_storage_key,
+        thumbnail_storage_key=thumbnail_storage_key,
         verification_id=verification_id,
         metadata_json=metadata_dict,
     )
@@ -189,8 +213,11 @@ async def submit_asset(
             f"{settings.API_V1_PREFIX}/assets/{asset.id}/promoter"
             if promoter_storage_key else None
         ),
+        thumbnail_url=f"{settings.API_V1_PREFIX}/assets/{asset.id}/thumbnail",
         metadata=asset.metadata_json,
         promoter_check=promoter_check_result,
+        auto_promoter_added=auto_promoter_added,
+        promoter_already_present=promoter_already_present,
         status=asset.status,
         created_at=asset.created_at,
         expires_at=asset.expires_at,
@@ -227,14 +254,15 @@ async def add_promoter_to_image(
             detail="Empty file",
         )
 
-    # Get party's promoter statement
+    # Get effective promoter statement (user's own or party fallback)
     party_result = await db.execute(select(Party).where(Party.id == user.party_id))
     party = party_result.scalar_one()
 
-    if not party.promoter_statement:
+    effective_statement = _get_effective_promoter_statement(user, party)
+    if not effective_statement:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No promoter statement set for this party. Set one first via the party settings.",
+            detail="No promoter statement set. Set one via your profile or party settings.",
         )
 
     pos = position or user.default_statement_position
@@ -242,7 +270,7 @@ async def add_promoter_to_image(
         pos = "bottom-left"
 
     result_bytes = overlay_promoter_statement(
-        image_bytes, party.promoter_statement, position=pos
+        image_bytes, effective_statement, position=pos
     )
     return Response(
         content=result_bytes,
@@ -251,7 +279,7 @@ async def add_promoter_to_image(
     )
 
 
-@router.get("", response_model=list[AssetListItem])
+@router.get("")
 async def list_assets(
     page: int = 1,
     per_page: int = 50,
@@ -268,7 +296,22 @@ async def list_assets(
         .limit(per_page)
     )
     assets = result.scalars().all()
-    return assets
+    return [
+        AssetListItem(
+            id=a.id,
+            verification_id=a.verification_id,
+            mime_type=a.mime_type,
+            file_size=a.file_size,
+            status=a.status,
+            created_at=a.created_at,
+            thumbnail_url=(
+                f"{settings.API_V1_PREFIX}/assets/{a.id}/thumbnail"
+                if a.thumbnail_storage_key
+                else None
+            ),
+        )
+        for a in assets
+    ]
 
 
 @router.get("/{asset_id}", response_model=AssetResponse)
@@ -301,6 +344,10 @@ async def get_asset(
         promoter_image_url=(
             f"{settings.API_V1_PREFIX}/assets/{asset.id}/promoter"
             if asset.promoter_storage_key else None
+        ),
+        thumbnail_url=(
+            f"{settings.API_V1_PREFIX}/assets/{asset.id}/thumbnail"
+            if asset.thumbnail_storage_key else None
         ),
         metadata=asset.metadata_json,
         status=asset.status,
@@ -350,6 +397,10 @@ async def update_asset(
             f"{settings.API_V1_PREFIX}/assets/{asset.id}/promoter"
             if asset.promoter_storage_key else None
         ),
+        thumbnail_url=(
+            f"{settings.API_V1_PREFIX}/assets/{asset.id}/thumbnail"
+            if asset.thumbnail_storage_key else None
+        ),
         metadata=asset.metadata_json,
         status=asset.status,
         created_at=asset.created_at,
@@ -395,3 +446,21 @@ async def get_asset_promoter_image(
 
     promoter_bytes = await retrieve_blob(asset.promoter_storage_key)
     return Response(content=promoter_bytes, media_type="image/png")
+
+
+@router.get("/{asset_id}/thumbnail")
+async def get_asset_thumbnail(
+    asset_id: uuid.UUID,
+    user: PartyUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download the thumbnail for an asset."""
+    result = await db.execute(
+        select(Asset).where(Asset.id == asset_id, Asset.party_id == user.party_id)
+    )
+    asset = result.scalar_one_or_none()
+    if not asset or not asset.thumbnail_storage_key:
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+
+    thumb_bytes = await retrieve_blob(asset.thumbnail_storage_key)
+    return Response(content=thumb_bytes, media_type="image/jpeg")

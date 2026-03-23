@@ -1,15 +1,15 @@
 """Party management endpoints."""
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import hash_password, require_admin
+from app.core.auth import hash_password, require_admin, get_current_user
 from app.core.database import get_db
 from app.models.party import Party, PartyUser
-from app.core.auth import get_current_user
 from app.schemas.party import (
     PartyCreate,
     PartyPublicResponse,
@@ -23,6 +23,115 @@ from app.schemas.party import (
 from app.services.encryption import encrypt_string
 
 router = APIRouter(prefix="/parties", tags=["parties"])
+
+
+# ── /me/* routes MUST come before /{party_id}/* to avoid UUID parse errors ──
+
+
+@router.get("/me/promoter-statement")
+async def get_user_promoter_statement(
+    user: PartyUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the effective promoter statement for the current user.
+
+    Returns the user's own statement if set, otherwise falls back to the party default.
+    """
+    party_result = await db.execute(select(Party).where(Party.id == user.party_id))
+    party = party_result.scalar_one()
+
+    effective = user.promoter_statement or party.promoter_statement
+    return {
+        "user_statement": user.promoter_statement,
+        "party_statement": party.promoter_statement,
+        "effective_statement": effective,
+        "source": "user" if user.promoter_statement else ("party" if party.promoter_statement else None),
+        "updated_at": (
+            user.promoter_statement_updated_at if user.promoter_statement
+            else party.promoter_statement_updated_at
+        ),
+    }
+
+
+@router.put("/me/promoter-statement")
+async def set_user_promoter_statement(
+    body: PromoterStatementUpdate,
+    user: PartyUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Set the current user's own promoter statement (overrides party default)."""
+    statement = body.statement.strip()
+    if len(statement) < 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Promoter statement must be at least 5 characters",
+        )
+    if len(statement) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Promoter statement must not exceed 500 characters",
+        )
+
+    result = await db.execute(select(PartyUser).where(PartyUser.id == user.id))
+    db_user = result.scalar_one()
+    db_user.promoter_statement = statement
+    db_user.promoter_statement_updated_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(db_user)
+
+    return {
+        "user_statement": db_user.promoter_statement,
+        "updated_at": db_user.promoter_statement_updated_at,
+    }
+
+
+@router.delete("/me/promoter-statement")
+async def clear_user_promoter_statement(
+    user: PartyUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear the current user's promoter statement (revert to party default)."""
+    result = await db.execute(select(PartyUser).where(PartyUser.id == user.id))
+    db_user = result.scalar_one()
+    db_user.promoter_statement = None
+    db_user.promoter_statement_updated_at = None
+
+    await db.commit()
+
+    party_result = await db.execute(select(Party).where(Party.id == user.party_id))
+    party = party_result.scalar_one()
+
+    return {
+        "detail": "User promoter statement cleared, using party default",
+        "effective_statement": party.promoter_statement,
+    }
+
+
+@router.patch("/me/default-position")
+async def update_default_position(
+    position: str,
+    user: PartyUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the user's default promoter statement position."""
+    from app.services.promoter_overlay import VALID_POSITIONS
+
+    if position not in VALID_POSITIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid position. Must be one of: {', '.join(VALID_POSITIONS)}",
+        )
+
+    result = await db.execute(select(PartyUser).where(PartyUser.id == user.id))
+    db_user = result.scalar_one()
+    db_user.default_statement_position = position
+
+    await db.commit()
+    return {"detail": "Default position updated", "position": position}
+
+
+# ── Collection routes ──
 
 
 @router.get("", response_model=list[PartyPublicResponse])
@@ -60,6 +169,9 @@ async def create_party(
     await db.commit()
     await db.refresh(party)
     return party
+
+
+# ── /{party_id} routes ──
 
 
 @router.get("/{party_id}", response_model=PartyResponse)
@@ -178,8 +290,6 @@ async def set_promoter_statement(
     db: AsyncSession = Depends(get_db),
 ):
     """Set or update the promoter statement for a party (admin only)."""
-    from datetime import datetime, timezone
-
     result = await db.execute(select(Party).where(Party.id == party_id))
     party = result.scalar_one_or_none()
     if not party:
@@ -210,26 +320,3 @@ async def set_promoter_statement(
         statement=party.promoter_statement,
         updated_at=party.promoter_statement_updated_at,
     )
-
-
-@router.patch("/me/default-position")
-async def update_default_position(
-    position: str,
-    user: PartyUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Update the user's default promoter statement position."""
-    from app.services.promoter_overlay import VALID_POSITIONS
-
-    if position not in VALID_POSITIONS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid position. Must be one of: {', '.join(VALID_POSITIONS)}",
-        )
-
-    result = await db.execute(select(PartyUser).where(PartyUser.id == user.id))
-    db_user = result.scalar_one()
-    db_user.default_statement_position = position
-
-    await db.commit()
-    return {"detail": "Default position updated", "position": position}
