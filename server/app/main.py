@@ -19,11 +19,23 @@ import logging
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, parties, assets, verification, email_processing, downloads, ec_dashboard, ec_user_management, party_admin
+from app.api import (
+    auth,
+    parties,
+    assets,
+    verification,
+    email_processing,
+    downloads,
+    ec_dashboard,
+    ec_user_management,
+    party_admin,
+    extension,
+)
 
 # Import models so SQLAlchemy creates their tables
 import app.models.share_link  # noqa: F401
 import app.models.geo_stats  # noqa: F401
+import app.models.extension  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +124,7 @@ app.include_router(downloads.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ec_dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ec_user_management.router, prefix=settings.API_V1_PREFIX)
 app.include_router(party_admin.router, prefix=settings.API_V1_PREFIX)
+app.include_router(extension.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

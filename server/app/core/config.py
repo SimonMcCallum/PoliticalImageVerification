@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     RATE_LIMIT_VERIFY_PER_MINUTE: int = 30
     RATE_LIMIT_SUBMIT_PER_MINUTE: int = 10
 
+    # Extension report/flag rate limiting (per-IP per minute)
+    RATE_LIMIT_EXTENSION_REPORT_PER_MINUTE: int = 60
+    RATE_LIMIT_EXTENSION_FLAG_PER_MINUTE: int = 10
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

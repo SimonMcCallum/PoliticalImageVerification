@@ -1,0 +1,152 @@
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 16px;
+  width: 380px;
+  color: #111;
+  background: #fff;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 8px 0;
+}
+
+h2 {
+  font-size: 13px;
+  margin: 12px 0 6px 0;
+  text-transform: uppercase;
+  color: #555;
+}
+
+p {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+}
+
+#status {
+  color: #555;
+}
+
+.debug-toggle {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 13px;
+}
+
+.debug-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+#debug-panel {
+  margin-top: 8px;
+}
+
+dl.bloom-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  font-size: 12px;
+  margin: 0 0 8px 0;
+}
+
+dl.bloom-meta dt {
+  color: #555;
+}
+
+dl.bloom-meta dd {
+  margin: 0;
+  font-family: ui-monospace, "Consolas", monospace;
+}
+
+.debug-actions {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.debug-actions button {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: #f3f3f3;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.debug-actions button:hover {
+  background: #ebebeb;
+}
+
+ul.events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+ul.events li {
+  padding: 4px 6px;
+  border-bottom: 1px solid #f3f3f3;
+  display: grid;
+  grid-template-columns: 70px 110px 1fr;
+  gap: 6px;
+  align-items: start;
+}
+
+ul.events li:last-child {
+  border-bottom: none;
+}
+
+ul.events .ts {
+  color: #888;
+  font-family: ui-monospace, "Consolas", monospace;
+}
+
+ul.events .kind {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #eef;
+  text-align: center;
+}
+
+ul.events .kind-bloom-check {
+  background: #e6f7ff;
+}
+ul.events .kind-api-call {
+  background: #fff3cd;
+}
+ul.events .kind-overlay-shown {
+  background: #e6ffea;
+}
+ul.events .kind-error {
+  background: #ffe0e0;
+}
+ul.events .kind-flag-submitted,
+ul.events .kind-report-submitted {
+  background: #f0e6ff;
+}
+
+ul.events pre.details {
+  grid-column: 1 / -1;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 4px 6px;
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}

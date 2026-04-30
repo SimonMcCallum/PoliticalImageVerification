@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PIVS</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1>PIVS</h1>
+      <p>
+        This extension checks political images against the New Zealand
+        Electoral Commission's register. All image analysis is local.
+      </p>
+      <p id="status" data-testid="status">Ready.</p>
+
+      <section class="debug-toggle">
+        <label>
+          <input id="debug-toggle" type="checkbox" />
+          Show debug activity (transparency mode)
+        </label>
+      </section>
+
+      <section id="debug-panel" hidden aria-live="polite">
+        <h2>Debug activity</h2>
+
+        <dl class="bloom-meta" data-testid="bloom-meta">
+          <dt>Bloom filter loaded</dt><dd id="bloom-loaded">no</dd>
+          <dt>Items in filter</dt><dd id="bloom-items">-</dd>
+          <dt>Bits</dt><dd id="bloom-bits">-</dd>
+          <dt>Hashes per lookup</dt><dd id="bloom-k">-</dd>
+          <dt>Estimated false-positive rate</dt><dd id="bloom-fpr">-</dd>
+          <dt>Generated at</dt><dd id="bloom-generated">-</dd>
+        </dl>
+
+        <div class="debug-actions">
+          <button id="debug-clear" type="button">Clear</button>
+          <button id="debug-export" type="button">Export JSON</button>
+        </div>
+
+        <ul id="debug-events" data-testid="debug-events" class="events"></ul>
+      </section>
+    </main>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

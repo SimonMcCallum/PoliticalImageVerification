@@ -52,7 +52,10 @@
       "Bash(sudo docker compose:*)",
       "Bash(sudo docker ps:*)",
       "Bash(python3:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(export PATH=\"$PATH:/usr/bin:/c/Windows/System32:/c/Users/simon/AppData/Local/Programs/Python/Python312:/c/Users/simon/AppData/Local/Programs/Python/Python312/Scripts\")",
+      "Bash(export PATH=\"$PATH:/usr/bin:/c/Windows/System32:/c/Program Files/nodejs\")",
+      "Bash(npm test *)"
     ],
     "additionalDirectories": [
       "d:\\git\\PoliticalImageVerification\\client\\src\\app\\verify"

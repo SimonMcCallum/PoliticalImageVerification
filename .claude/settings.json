@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --version)",
+      "Bash(pandoc doc/briefing-elections-nz-pivs-deployment.md -o doc/briefing-elections-nz-pivs-deployment.docx --from=gfm --toc --toc-depth=2 --number-sections)",
+      "Bash(pandoc doc/briefing-elections-nz-pivs-deployment.md -o doc/briefing-elections-nz-pivs-deployment.docx --from=gfm --toc --toc-depth=2 --metadata title=\"Political Image Verification System \\(PIVS\\): Proposal to the Electoral Commission\" --metadata subtitle=\"Deployment for the 2026 General Election\" --metadata author=\"Political Image Verification Project Team\" --metadata date=\"April 2026\")",
+      "Read(//c/Users/simon/.claude/projects/d--git-PoliticalImageVerification/**)",
+      "Bash(pandoc doc/briefing-elections-nz-pivs-deployment.md -o doc/briefing-elections-nz-pivs-deployment.docx --from=gfm --toc --toc-depth=2 --metadata title=\"Political Image Verification System \\(PIVS\\): Proposal to the Electoral Commission\" --metadata author=\"Political Image Verification Project Team\" --metadata date=\"April 2026\")",
+      "Bash(pandoc doc/briefing-elections-nz-pivs-deployment.md -o doc/briefing-elections-nz-pivs-deployment-v2.docx --from=gfm --toc --toc-depth=2 --metadata title=\"Political Image Verification System \\(PIVS\\): Proposal to the Electoral Commission\" --metadata author=\"Political Image Verification Project Team\" --metadata date=\"April 2026\")",
+      "Read(//tmp/**)",
+      "Bash(/c/Users/simon/AppData/Local/Pandoc/pandoc.exe --version)",
+      "Read(//c/Users/simon/AppData/Local/**)",
+      "Bash(export PATH=\"$PATH:/c/Users/simon/AppData/Local/Pandoc:/c/Program Files/Pandoc:/usr/bin\")",
+      "Bash(export PATH=\"$PATH:/c/Users/simon/AppData/Local/Pandoc:/c/Program Files/Pandoc\")",
+      "Bash(export PATH=\"$PATH:/usr/bin:/c/Windows/System32\")"
+    ]
+  }
+}

@@ -11,9 +11,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import require_electoral_commission
 from app.core.database import get_db
 from app.models.asset import Asset, AssetStatus
+from app.models.extension import (
+    ExtensionFlag,
+    ExtensionReport,
+    FlagStatus,
+    ReportStatus,
+)
 from app.models.geo_stats import VerificationGeoStat
 from app.models.party import Party, PartyUser
 from app.models.verification import VerificationLog, VerificationResult
+from app.schemas.extension import FlagQueueEntry, ReviewQueueEntry
 from app.services.encryption import decrypt_dek, decrypt_data
 from app.services.storage import retrieve_blob
 
@@ -241,3 +248,180 @@ async def ec_download_image(
             )
         },
     )
+
+
+# --------------------------------------------------------------------------
+# Extension review queue (admin only)
+# --------------------------------------------------------------------------
+
+
+@router.get("/review-queue/reports", response_model=list[ReviewQueueEntry])
+async def ec_list_reports(
+    status_filter: ReportStatus | None = Query(None, alias="status"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    """List extension-sourced reports of "promoter statement present,
+    not in register". Ordered by most-observed first, then most-recent.
+    """
+    query = select(ExtensionReport)
+    if status_filter is not None:
+        query = query.where(ExtensionReport.status == status_filter)
+    query = (
+        query.order_by(
+            ExtensionReport.observed_count.desc(),
+            ExtensionReport.last_seen.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    rows = result.scalars().all()
+    return [
+        ReviewQueueEntry(
+            id=r.id,
+            sha256=r.sha256_hash,
+            pdq=r.pdq_hash,
+            phash=r.phash,
+            detected_promoter_text=r.detected_promoter_text,
+            page_url_host=r.page_url_host,
+            observed_count=r.observed_count,
+            first_seen=r.first_seen,
+            last_seen=r.last_seen,
+            status=r.status,
+            resolved_asset_id=r.resolved_asset_id,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/review-queue/reports/{report_id}/dismiss")
+async def ec_dismiss_report(
+    report_id: uuid.UUID,
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ExtensionReport).where(ExtensionReport.id == report_id)
+    )
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    report.status = ReportStatus.DISMISSED
+    report.resolved_by = user.id
+    report.resolved_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "dismissed", "report_id": str(report_id)}
+
+
+@router.post("/review-queue/reports/{report_id}/triage")
+async def ec_triage_report(
+    report_id: uuid.UUID,
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark a report as triaged (admin is actively following up)."""
+    result = await db.execute(
+        select(ExtensionReport).where(ExtensionReport.id == report_id)
+    )
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    report.status = ReportStatus.TRIAGED
+    await db.commit()
+    return {"status": "triaged", "report_id": str(report_id)}
+
+
+@router.get("/review-queue/flags", response_model=list[FlagQueueEntry])
+async def ec_list_flags(
+    status_filter: FlagStatus | None = Query(None, alias="status"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    """List user-initiated flags raised through the extension."""
+    query = select(ExtensionFlag)
+    if status_filter is not None:
+        query = query.where(ExtensionFlag.status == status_filter)
+    query = (
+        query.order_by(ExtensionFlag.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    rows = result.scalars().all()
+    return [
+        FlagQueueEntry(
+            id=f.id,
+            sha256=f.sha256_hash,
+            pdq=f.pdq_hash,
+            phash=f.phash,
+            reason=f.reason,
+            note=f.note,
+            page_url_host=f.page_url_host,
+            status=f.status,
+            created_at=f.created_at,
+        )
+        for f in rows
+    ]
+
+
+@router.post("/review-queue/flags/{flag_id}/dismiss")
+async def ec_dismiss_flag(
+    flag_id: uuid.UUID,
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(ExtensionFlag).where(ExtensionFlag.id == flag_id))
+    flag = result.scalar_one_or_none()
+    if not flag:
+        raise HTTPException(status_code=404, detail="Flag not found")
+    flag.status = FlagStatus.DISMISSED
+    flag.triaged_by = user.id
+    flag.triaged_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "dismissed", "flag_id": str(flag_id)}
+
+
+@router.post("/review-queue/flags/{flag_id}/refer")
+async def ec_refer_flag(
+    flag_id: uuid.UUID,
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark a flag as referred on to another body (e.g. the ASA)."""
+    result = await db.execute(select(ExtensionFlag).where(ExtensionFlag.id == flag_id))
+    flag = result.scalar_one_or_none()
+    if not flag:
+        raise HTTPException(status_code=404, detail="Flag not found")
+    flag.status = FlagStatus.REFERRED
+    flag.triaged_by = user.id
+    flag.triaged_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"status": "referred", "flag_id": str(flag_id)}
+
+
+@router.get("/review-queue/summary")
+async def ec_review_queue_summary(
+    user: PartyUser = Depends(require_electoral_commission),
+    db: AsyncSession = Depends(get_db),
+):
+    """Counts by status for the review queue dashboards."""
+    report_counts = {}
+    for s in ReportStatus:
+        r = await db.execute(
+            select(func.count(ExtensionReport.id)).where(ExtensionReport.status == s)
+        )
+        report_counts[s.value] = r.scalar() or 0
+
+    flag_counts = {}
+    for s in FlagStatus:
+        r = await db.execute(
+            select(func.count(ExtensionFlag.id)).where(ExtensionFlag.status == s)
+        )
+        flag_counts[s.value] = r.scalar() or 0
+
+    return {"reports": report_counts, "flags": flag_counts}

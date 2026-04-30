@@ -1,0 +1,28 @@
+{
+  "name": "pivs-browser-extension",
+  "private": true,
+  "version": "0.1.0",
+  "description": "PIVS browser extension: check political images against the NZ Electoral Commission's verification register.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "zip": "cd dist && bestzip ../dist.zip *"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.23",
+    "@types/chrome": "^0.0.254",
+    "@types/node": "^20.11.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "bestzip": "^2.2.1",
+    "jsdom": "^24.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vitest": "^1.2.0"
+  }
+}
