@@ -80,26 +80,26 @@ export default function ImageVerifier() {
           <div>
             <img
               src={preview}
-              alt="Uploaded"
+              alt="Image you uploaded for verification"
               style={{
                 maxWidth: "100%",
                 maxHeight: "300px",
-                borderRadius: "8px",
+                borderRadius: "var(--ec-radius-sm)",
               }}
             />
-            <p style={{ color: "#555", marginTop: "0.5rem" }}>
-              Drop a different image or click to change
+            <p style={{ color: "var(--ec-text-muted)", marginTop: "0.5rem" }}>
+              Drop a different image or click to change.
             </p>
           </div>
         ) : (
           <div>
-            <p style={{ fontSize: "1.25rem", fontWeight: 500, margin: "0 0 0.5rem" }}>
+            <p style={{ fontSize: "1.2rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
               {isDragActive
-                ? "Drop the image here..."
-                : "Drag & drop a political image here"}
+                ? "Drop the image to verify"
+                : "Drag and drop a political image"}
             </p>
-            <p style={{ color: "#555", margin: 0 }}>
-              or click to select a file (JPEG, PNG, WebP up to 50MB)
+            <p style={{ color: "var(--ec-text-muted)", margin: 0 }}>
+              Or click to select a file. JPEG, PNG, or WebP up to 50 MB.
             </p>
           </div>
         )}
@@ -107,35 +107,37 @@ export default function ImageVerifier() {
 
       {loading && (
         <div style={{ textAlign: "center", padding: "2rem" }}>
-          <p style={{ fontSize: "1.125rem" }}>Verifying image...</p>
-          <p style={{ color: "#555" }}>
-            Computing hashes and searching the registry
+          <p style={{ fontSize: "1.05rem", fontWeight: 600, margin: 0 }}>
+            Checking the register...
+          </p>
+          <p style={{ color: "var(--ec-text-muted)", margin: "0.4rem 0 0" }}>
+            Computing hashes and comparing against the verification register.
           </p>
         </div>
       )}
 
       {error && (
-        <div className="result-unverified" style={{ marginTop: "1.5rem" }}>
-          <h3 style={{ margin: "0 0 0.5rem", color: "#dc2626" }}>Error</h3>
+        <div className="result result-unverified" style={{ marginTop: "1.5rem" }}>
+          <h3 className="result__title" style={{ margin: "0 0 0.5rem" }}>Error</h3>
           <p style={{ margin: 0 }}>{error}</p>
         </div>
       )}
 
       {result && !loading && (
         <div
-          className={result.verified ? "result-verified" : "result-unverified"}
+          className={`result ${result.verified ? "result-verified" : "result-unverified"}`}
           style={{ marginTop: "1.5rem" }}
         >
           {result.verified ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                <span style={{ fontSize: "2rem" }}>&#x2705;</span>
+                <span style={{ fontSize: "2rem" }} aria-hidden>&#x2705;</span>
                 <div>
-                  <h2 style={{ margin: 0, color: "#16a34a" }}>
-                    VERIFIED
+                  <h2 className="result__title" style={{ margin: 0 }}>
+                    Registered
                   </h2>
-                  <p style={{ margin: 0, color: "#555" }}>
-                    This image is registered by a political party
+                  <p style={{ margin: 0, color: "var(--ec-text-muted)" }}>
+                    This image is in a political party&apos;s register.
                   </p>
                 </div>
               </div>
@@ -188,31 +190,27 @@ export default function ImageVerifier() {
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontSize: "2rem" }}>&#x274C;</span>
+                <span style={{ fontSize: "2rem" }} aria-hidden>&#x274C;</span>
                 <div>
-                  <h2 style={{ margin: 0, color: "#dc2626" }}>
-                    NOT VERIFIED
+                  <h2 className="result__title" style={{ margin: 0 }}>
+                    Not registered
                   </h2>
-                  <p style={{ margin: 0, color: "#555" }}>
-                    This image is not registered by any political party in our
-                    system. This does not necessarily mean it is fake &mdash; the
-                    party may not have registered it yet.
+                  <p style={{ margin: 0, color: "var(--ec-text-muted)" }}>
+                    This image is not in any party&apos;s register. That does
+                    not, on its own, mean the image is fake. The party may
+                    simply not have registered it.
                   </p>
                 </div>
               </div>
               {result.promoter_detected && result.promoter_party_name && (
-                <div style={{
-                  marginTop: "1rem", padding: "1rem",
-                  background: "#FFF8E1", border: "1px solid #FFC107",
-                  borderRadius: "8px"
-                }}>
+                <div className="notice" style={{ marginTop: "1rem" }}>
                   <p style={{ margin: 0, fontWeight: 600 }}>
-                    Promoter Statement Detected
+                    Promoter statement detected
                   </p>
-                  <p style={{ margin: "0.25rem 0 0", color: "#555" }}>
+                  <p style={{ margin: "0.25rem 0 0", color: "var(--ec-text-muted)" }}>
                     A promoter statement for <strong>{result.promoter_party_name}</strong> was
-                    detected in this image via OCR, but the image itself is not registered in our
-                    verification system.
+                    detected on this image via OCR, but the image itself is
+                    not in the verification register.
                   </p>
                 </div>
               )}

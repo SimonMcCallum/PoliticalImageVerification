@@ -57,7 +57,7 @@ export default function VerifyByIdPage() {
     return (
       <div className="container">
         <div className="result-unverified">
-          <h2 style={{ color: "#dc2626", marginTop: 0 }}>Verification Error</h2>
+          <h2 style={{ color: "var(--ec-error)", marginTop: 0 }}>Verification Error</h2>
           <p>{error}</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function VerifyByIdPage() {
             }}
           >
             <span style={{ fontSize: "3rem" }}>&#x2705;</span>
-            <h2 style={{ color: "#16a34a", margin: "0.5rem 0 0" }}>
+            <h2 style={{ color: "var(--ec-success)", margin: "0.5rem 0 0" }}>
               VERIFIED
             </h2>
             <p style={{ color: "#555" }}>
@@ -186,7 +186,7 @@ export default function VerifyByIdPage() {
         <div className="result-unverified">
           <div style={{ textAlign: "center" }}>
             <span style={{ fontSize: "3rem" }}>&#x274C;</span>
-            <h2 style={{ color: "#dc2626", margin: "0.5rem 0 0" }}>
+            <h2 style={{ color: "var(--ec-error)", margin: "0.5rem 0 0" }}>
               NOT VERIFIED
             </h2>
             <p style={{ color: "#555", maxWidth: "500px", margin: "1rem auto 0" }}>

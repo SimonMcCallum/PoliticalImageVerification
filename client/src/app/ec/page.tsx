@@ -180,7 +180,7 @@ export default function ECDashboard() {
             key={tab}
             className="btn"
             style={{
-              background: activeTab === tab ? "#F26522" : "#F5F5F5",
+              background: activeTab === tab ? "var(--ec-orange)" : "var(--ec-bg-page)",
               color: activeTab === tab ? "white" : "#333",
               border: "none",
               padding: "0.5rem 1rem",
@@ -201,15 +201,15 @@ export default function ECDashboard() {
           {/* Summary Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
             <div className="card" style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#F26522" }}>{parties.length}</p>
+              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--ec-orange)" }}>{parties.length}</p>
               <p style={{ margin: 0, color: "#666" }}>Registered Parties</p>
             </div>
             <div className="card" style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#F26522" }}>{totalImages}</p>
+              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--ec-orange)" }}>{totalImages}</p>
               <p style={{ margin: 0, color: "#666" }}>Total Images</p>
             </div>
             <div className="card" style={{ textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#F26522" }}>{stats?.total_verifications || 0}</p>
+              <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--ec-orange)" }}>{stats?.total_verifications || 0}</p>
               <p style={{ margin: 0, color: "#666" }}>Verifications (30d)</p>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function ECDashboard() {
                       </td>
                       <td style={{ textAlign: "center", padding: "0.5rem" }}>
                         {p.has_promoter_statement ? (
-                          <span style={{ color: "#28A745" }}>&#x2713;</span>
+                          <span style={{ color: "var(--ec-success)" }}>&#x2713;</span>
                         ) : (
                           <span style={{ color: "#DC3545" }}>&#x2717;</span>
                         )}
@@ -383,7 +383,7 @@ export default function ECDashboard() {
                 borderRadius: "8px",
                 marginBottom: "1rem",
                 background: actionMessage.type === "success" ? "#E8F5E9" : "#FFEBEE",
-                border: `1px solid ${actionMessage.type === "success" ? "#28A745" : "#DC3545"}`,
+                border: `1px solid ${actionMessage.type === "success" ? "var(--ec-success)" : "#DC3545"}`,
                 color: actionMessage.type === "success" ? "#1B5E20" : "#B71C1C",
               }}
             >
@@ -465,7 +465,7 @@ export default function ECDashboard() {
                       <td style={{ padding: "0.5rem" }}>
                         <span style={{
                           fontSize: "0.75rem",
-                          background: u.role === "electoral_commission" ? "#E3F2FD" : "#F5F5F5",
+                          background: u.role === "electoral_commission" ? "#E3F2FD" : "var(--ec-bg-page)",
                           color: u.role === "electoral_commission" ? "#1565C0" : "#333",
                           padding: "0.125rem 0.5rem",
                           borderRadius: "4px",
@@ -475,7 +475,7 @@ export default function ECDashboard() {
                       </td>
                       <td style={{ textAlign: "center", padding: "0.5rem" }}>
                         {u.is_active ? (
-                          <span style={{ color: "#28A745" }}>&#x2713;</span>
+                          <span style={{ color: "var(--ec-success)" }}>&#x2713;</span>
                         ) : (
                           <span style={{ color: "#DC3545" }}>&#x2717;</span>
                         )}
@@ -488,7 +488,7 @@ export default function ECDashboard() {
                           <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                             <button
                               className="btn"
-                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "#F5F5F5" }}
+                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "var(--ec-bg-page)" }}
                               onClick={() => {
                                 setEditingEmail(u.id);
                                 setEmailDraft(u.email);
@@ -533,7 +533,7 @@ export default function ECDashboard() {
                             ) : (
                               <button
                                 className="btn"
-                                style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "#FFF3EC", color: "#D4551A" }}
+                                style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "var(--ec-orange-soft)", color: "#D4551A" }}
                                 onClick={() => { setResetConfirm(u.id); setActionMessage(null); }}
                               >
                                 Reset Password
@@ -556,20 +556,20 @@ export default function ECDashboard() {
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Verification Statistics (Last {stats.period_days} days)</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-            <div style={{ textAlign: "center", padding: "1rem", background: "#F5F5F5", borderRadius: "8px" }}>
+            <div style={{ textAlign: "center", padding: "1rem", background: "var(--ec-bg-page)", borderRadius: "8px" }}>
               <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700 }}>{stats.total_verifications}</p>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#666" }}>Total</p>
             </div>
             <div style={{ textAlign: "center", padding: "1rem", background: "#E8F5E9", borderRadius: "8px" }}>
-              <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#28A745" }}>{stats.verified_count}</p>
+              <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--ec-success)" }}>{stats.verified_count}</p>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#666" }}>Verified</p>
             </div>
             <div style={{ textAlign: "center", padding: "1rem", background: "#FFEBEE", borderRadius: "8px" }}>
               <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#DC3545" }}>{stats.unverified_count}</p>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#666" }}>Unverified</p>
             </div>
-            <div style={{ textAlign: "center", padding: "1rem", background: "#FFF3EC", borderRadius: "8px" }}>
-              <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#F26522" }}>{stats.verification_rate}%</p>
+            <div style={{ textAlign: "center", padding: "1rem", background: "var(--ec-orange-soft)", borderRadius: "8px" }}>
+              <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--ec-orange)" }}>{stats.verification_rate}%</p>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#666" }}>Success Rate</p>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function ECDashboard() {
                           <td style={{ padding: "0.5rem" }}>
                             <div style={{
                               width: `${pct}%`, minWidth: d.total > 0 ? "4px" : "0",
-                              height: "16px", background: "#F26522", borderRadius: "2px",
+                              height: "16px", background: "var(--ec-orange)", borderRadius: "2px",
                             }} />
                           </td>
                         </tr>
@@ -657,7 +657,7 @@ export default function ECDashboard() {
                   background: "white",
                 }}>
                   <div style={{
-                    width: "100%", height: "120px", background: "#F5F5F5",
+                    width: "100%", height: "120px", background: "var(--ec-bg-page)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     {img.thumbnail_url ? (
@@ -689,7 +689,7 @@ export default function ECDashboard() {
                     <div style={{ display: "flex", gap: "0.25rem", marginTop: "0.375rem", flexWrap: "wrap" }}>
                       <button
                         className="btn"
-                        style={{ padding: "0.125rem 0.375rem", fontSize: "0.5625rem", background: "#F5F5F5" }}
+                        style={{ padding: "0.125rem 0.375rem", fontSize: "0.5625rem", background: "var(--ec-bg-page)" }}
                         onClick={async () => {
                           const res = await fetch(`${API_BASE}/api/v1/ec/images/${img.id}/download/original`, {
                             headers: { Authorization: `Bearer ${token}` },
@@ -708,7 +708,7 @@ export default function ECDashboard() {
                       </button>
                       <button
                         className="btn"
-                        style={{ padding: "0.125rem 0.375rem", fontSize: "0.5625rem", background: "#FFF3EC", color: "#D4551A" }}
+                        style={{ padding: "0.125rem 0.375rem", fontSize: "0.5625rem", background: "var(--ec-orange-soft)", color: "#D4551A" }}
                         onClick={async () => {
                           const res = await fetch(`${API_BASE}/api/v1/ec/images/${img.id}/download/promoter`, {
                             headers: { Authorization: `Bearer ${token}` },

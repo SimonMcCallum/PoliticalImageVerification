@@ -553,7 +553,7 @@ export default function PartyPortal() {
             {promoterStatement ? (
               <div
                 style={{
-                  background: "#F5F5F5",
+                  background: "var(--ec-bg-page)",
                   border: "1px solid #D8D8D8",
                   borderRadius: "8px",
                   padding: "1rem",
@@ -572,8 +572,8 @@ export default function PartyPortal() {
             ) : (
               <div
                 style={{
-                  background: "#FFF3EC",
-                  border: "1px solid #F26522",
+                  background: "var(--ec-orange-soft)",
+                  border: "1px solid var(--ec-orange)",
                   borderRadius: "8px",
                   padding: "1rem",
                   marginBottom: "0.75rem",
@@ -691,7 +691,7 @@ export default function PartyPortal() {
             ) : (
               <div
                 style={{
-                  background: "#F5F5F5",
+                  background: "var(--ec-bg-page)",
                   border: "1px solid #D8D8D8",
                   borderRadius: "8px",
                   padding: "1rem",
@@ -818,7 +818,7 @@ export default function PartyPortal() {
               <p style={{ color: "#DC3545", margin: "0 0 1rem" }}>{passwordError}</p>
             )}
             {passwordSuccess && (
-              <p style={{ color: "#28A745", margin: "0 0 1rem" }}>Password changed successfully.</p>
+              <p style={{ color: "var(--ec-success)", margin: "0 0 1rem" }}>Password changed successfully.</p>
             )}
             <button type="submit" className="btn btn-primary" disabled={changingPassword}>
               {changingPassword ? "Changing..." : "Change Password"}
@@ -849,7 +849,7 @@ export default function PartyPortal() {
                     borderRadius: "8px",
                     marginBottom: "1rem",
                     background: memberActionMsg.type === "success" ? "#E8F5E9" : "#FFEBEE",
-                    border: `1px solid ${memberActionMsg.type === "success" ? "#28A745" : "#DC3545"}`,
+                    border: `1px solid ${memberActionMsg.type === "success" ? "var(--ec-success)" : "#DC3545"}`,
                     color: memberActionMsg.type === "success" ? "#1B5E20" : "#B71C1C",
                   }}
                 >
@@ -859,7 +859,7 @@ export default function PartyPortal() {
 
               {/* Create Candidate Form */}
               <div style={{
-                background: "#F5F5F5",
+                background: "var(--ec-bg-page)",
                 borderRadius: "8px",
                 padding: "1rem",
                 marginBottom: "1rem",
@@ -942,7 +942,7 @@ export default function PartyPortal() {
                           <td style={{ padding: "0.5rem" }}>
                             <span style={{
                               fontSize: "0.75rem",
-                              background: m.role === "candidate" ? "#E3F2FD" : m.role === "admin" ? "#FFF3EC" : "#F5F5F5",
+                              background: m.role === "candidate" ? "#E3F2FD" : m.role === "admin" ? "var(--ec-orange-soft)" : "var(--ec-bg-page)",
                               color: m.role === "candidate" ? "#1565C0" : m.role === "admin" ? "#D4551A" : "#333",
                               padding: "0.125rem 0.5rem",
                               borderRadius: "4px",
@@ -952,14 +952,14 @@ export default function PartyPortal() {
                           </td>
                           <td style={{ textAlign: "center", padding: "0.5rem" }}>
                             {m.has_promoter_statement ? (
-                              <span style={{ color: "#28A745" }}>&#x2713;</span>
+                              <span style={{ color: "var(--ec-success)" }}>&#x2713;</span>
                             ) : (
                               <span style={{ color: "#999" }}>-</span>
                             )}
                           </td>
                           <td style={{ textAlign: "center", padding: "0.5rem" }}>
                             {m.is_active ? (
-                              <span style={{ color: "#28A745" }}>&#x2713;</span>
+                              <span style={{ color: "var(--ec-success)" }}>&#x2713;</span>
                             ) : (
                               <span style={{ color: "#DC3545" }}>&#x2717;</span>
                             )}
@@ -972,7 +972,7 @@ export default function PartyPortal() {
                               <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                                 <button
                                   className="btn"
-                                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "#FFF3EC", color: "#D4551A" }}
+                                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", background: "var(--ec-orange-soft)", color: "#D4551A" }}
                                   onClick={async () => {
                                     try {
                                       const res = await fetch(`${API_BASE}/api/v1/parties/${partyId}/members/${m.id}/reset-password`, {
@@ -1044,7 +1044,7 @@ export default function PartyPortal() {
           {/* Promoter options */}
           <div
             style={{
-              background: "#F5F5F5",
+              background: "var(--ec-bg-page)",
               borderRadius: "8px",
               padding: "1rem",
               marginBottom: "1.25rem",
@@ -1117,7 +1117,7 @@ export default function PartyPortal() {
                 <tr>
                   <td style={{ padding: "0.25rem 0", fontWeight: 500 }}>Verification URL</td>
                   <td>
-                    <a href={uploadResult.verification_url} style={{ color: "#F26522" }}>
+                    <a href={uploadResult.verification_url} style={{ color: "var(--ec-orange)" }}>
                       {uploadResult.verification_url}
                     </a>
                   </td>
@@ -1138,7 +1138,7 @@ export default function PartyPortal() {
                   <tr>
                     <td style={{ padding: "0.25rem 0", fontWeight: 500 }}>Promoter Image</td>
                     <td>
-                      <a href={uploadResult.promoter_image_url} style={{ color: "#F26522" }}>
+                      <a href={uploadResult.promoter_image_url} style={{ color: "var(--ec-orange)" }}>
                         Download stamped version
                       </a>
                     </td>
@@ -1155,7 +1155,7 @@ export default function PartyPortal() {
                   padding: "0.75rem",
                   borderRadius: "8px",
                   background: "#FFF3E0",
-                  border: "1px solid #F26522",
+                  border: "1px solid var(--ec-orange)",
                 }}
               >
                 <p style={{ margin: 0, fontWeight: 600, color: "#D4551A" }}>
@@ -1184,7 +1184,7 @@ export default function PartyPortal() {
                   padding: "0.75rem",
                   borderRadius: "8px",
                   background: "#E8F5E9",
-                  border: "1px solid #28A745",
+                  border: "1px solid var(--ec-success)",
                 }}
               >
                 <p style={{ margin: 0, fontWeight: 500, fontSize: "0.875rem", color: "#1B5E20" }}>
@@ -1201,7 +1201,7 @@ export default function PartyPortal() {
                   padding: "0.75rem",
                   borderRadius: "8px",
                   background: uploadResult.promoter_check.found ? "#E8F5E9" : "#FFF3E0",
-                  border: `1px solid ${uploadResult.promoter_check.found ? "#28A745" : "#F26522"}`,
+                  border: `1px solid ${uploadResult.promoter_check.found ? "var(--ec-success)" : "var(--ec-orange)"}`,
                 }}
               >
                 <p style={{ margin: 0, fontWeight: 500, fontSize: "0.875rem" }}>
@@ -1227,7 +1227,7 @@ export default function PartyPortal() {
               <a
                 href={`${API_BASE}/api/v1/assets/${uploadResult.id}/download/original`}
                 className="btn"
-                style={{ background: "#F5F5F5", fontSize: "0.75rem" }}
+                style={{ background: "var(--ec-bg-page)", fontSize: "0.75rem" }}
                 onClick={async (e) => {
                   e.preventDefault();
                   const res = await fetch(`${API_BASE}/api/v1/assets/${uploadResult.id}/download/original`, {
@@ -1249,7 +1249,7 @@ export default function PartyPortal() {
                 <a
                   href={`${API_BASE}/api/v1/assets/${uploadResult.id}/download/promoter`}
                   className="btn"
-                  style={{ background: "#F5F5F5", fontSize: "0.75rem" }}
+                  style={{ background: "var(--ec-bg-page)", fontSize: "0.75rem" }}
                   onClick={async (e) => {
                     e.preventDefault();
                     const res = await fetch(`${API_BASE}/api/v1/assets/${uploadResult.id}/download/promoter`, {
@@ -1387,7 +1387,7 @@ export default function PartyPortal() {
                         />
                       ) : (
                         <div style={{
-                          width: "50px", height: "50px", background: "#F5F5F5",
+                          width: "50px", height: "50px", background: "var(--ec-bg-page)",
                           borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center",
                           fontSize: "0.625rem", color: "#999",
                         }}>N/A</div>
@@ -1427,7 +1427,7 @@ export default function PartyPortal() {
                       <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                         <button
                           className="btn"
-                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "#F5F5F5" }}
+                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "var(--ec-bg-page)" }}
                           onClick={async () => {
                             const res = await fetch(`${API_BASE}/api/v1/assets/${asset.id}/download/original`, {
                               headers: { Authorization: `Bearer ${token}` },
@@ -1446,7 +1446,7 @@ export default function PartyPortal() {
                         </button>
                         <button
                           className="btn"
-                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "#FFF3EC", color: "#D4551A" }}
+                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.625rem", background: "var(--ec-orange-soft)", color: "#D4551A" }}
                           onClick={async () => {
                             const res = await fetch(`${API_BASE}/api/v1/assets/${asset.id}/download/promoter`, {
                               headers: { Authorization: `Bearer ${token}` },

@@ -280,16 +280,16 @@ export default function PromoterPreview() {
     <div className="container" style={{ maxWidth: "900px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h2 style={{ margin: 0 }}>Promoter Statement Preview</h2>
-        <Link href="/party" style={{ color: "#F26522", textDecoration: "none", fontSize: "0.875rem" }}>
+        <Link href="/party" style={{ color: "var(--ec-orange)", textDecoration: "none", fontSize: "0.875rem" }}>
           Back to Party Portal
         </Link>
       </div>
 
       {!promoterStatement ? (
         <div className="card">
-          <div style={{ background: "#FFF3EC", border: "1px solid #F26522", borderRadius: "8px", padding: "1rem" }}>
+          <div style={{ background: "var(--ec-orange-soft)", border: "1px solid var(--ec-orange)", borderRadius: "8px", padding: "1rem" }}>
             <p style={{ margin: 0, color: "#D4551A" }}>
-              No promoter statement set. Go to the <Link href="/party" style={{ color: "#F26522" }}>Party Portal</Link> to set one first.
+              No promoter statement set. Go to the <Link href="/party" style={{ color: "var(--ec-orange)" }}>Party Portal</Link> to set one first.
             </p>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default function PromoterPreview() {
                 </button>
               </div>
               {previewUrl && (
-                <p style={{ fontSize: "0.875rem", color: "#28A745", marginTop: "0.5rem" }}>
+                <p style={{ fontSize: "0.875rem", color: "var(--ec-success)", marginTop: "0.5rem" }}>
                   Download started. The server-rendered image uses the exact same contrast
                   and positioning algorithm used during asset registration.
                 </p>
