@@ -1,66 +1,70 @@
 """Privacy-first IP geolocation service.
 
-Resolves IP addresses to region/country in memory only.
-Only aggregated counts are persisted -- individual IPs are NEVER stored.
+History. Earlier iterations of this service called the free ip-api.com
+HTTP endpoint to resolve a request's IP to a country and region for
+aggregate stats. That call was a cross-border disclosure of personal
+information under IPP 12 of the Privacy Act 2020, and it ran over
+plain HTTP. It has been removed.
 
-Uses the free ip-api.com service for the test environment.
-For production, replace with MaxMind GeoLite2 offline database.
+Current behaviour. The service NEVER sends the IP off the host. It
+returns ``("Local", "NZ")`` for loopback and RFC 1918 addresses, and
+``("Unknown", "XX")`` for everything else. Aggregate counts therefore
+mostly fall into the "Unknown" bucket, which is the right default
+until an in-process, NZ-resident offline geolocation database
+(eg. MaxMind GeoLite2) is provisioned and a fresh privacy impact
+assessment signs off on its use.
+
+Re-enabling. Add a MaxMind GeoLite2 database, gate it on the
+``settings.GEO_LOOKUP_ENABLED`` flag, and resolve in-process only.
+Do not re-introduce the HTTP call.
 """
 
 import logging
 
-import httpx
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# In-memory cache to reduce API calls (IP -> (region, country))
-_cache: dict[str, tuple[str, str]] = {}
-_CACHE_MAX_SIZE = 1000
 
-
-def _evict_cache() -> None:
-    """Simple cache eviction: clear when too large."""
-    global _cache
-    if len(_cache) > _CACHE_MAX_SIZE:
-        _cache = {}
+def _is_private_ip(ip: str) -> bool:
+    if ip in ("127.0.0.1", "::1", "localhost"):
+        return True
+    return (
+        ip.startswith("10.")
+        or ip.startswith("192.168.")
+        or ip.startswith("172.16.")
+        or ip.startswith("172.17.")
+        or ip.startswith("172.18.")
+        or ip.startswith("172.19.")
+        or ip.startswith("172.2")  # covers 172.20-172.29
+        or ip.startswith("172.30.")
+        or ip.startswith("172.31.")
+        or ip.startswith("169.254.")  # link-local
+    )
 
 
 async def resolve_location(ip: str) -> tuple[str, str]:
-    """Resolve an IP address to (region, country_code).
+    """Resolve an IP to (region, country_code) without leaving the host.
 
-    Returns ("Unknown", "XX") if resolution fails.
-    The IP address is NOT stored or logged.
+    The IP address is never logged, never stored, and never sent off
+    the host. Only aggregate counts are persisted upstream of this call.
     """
-    # Skip private/localhost IPs
-    if ip in ("127.0.0.1", "::1", "localhost") or ip.startswith("192.168.") or ip.startswith("10."):
+    if not ip:
+        return ("Unknown", "XX")
+
+    if _is_private_ip(ip):
         return ("Local", "NZ")
 
-    # Check cache
-    if ip in _cache:
-        return _cache[ip]
+    if not settings.GEO_LOOKUP_ENABLED:
+        # The feature is dormant pending an offline NZ-resident database.
+        # The IP is treated as unresolved so the aggregate "Unknown"
+        # bucket grows but no cross-border disclosure occurs.
+        return ("Unknown", "XX")
 
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            # ip-api.com free tier: 45 req/min, no API key needed
-            resp = await client.get(
-                f"http://ip-api.com/json/{ip}",
-                params={"fields": "status,country,countryCode,regionName"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get("status") == "success":
-                    country = data.get("countryCode", "XX")
-                    # For NZ, use region name; for others, use country name
-                    if country == "NZ":
-                        region = data.get("regionName", "Unknown")
-                    else:
-                        region = data.get("country", "Unknown")
-
-                    result = (region, country)
-                    _evict_cache()
-                    _cache[ip] = result
-                    return result
-    except Exception:
-        logger.debug("Geolocation lookup failed for request (IP not logged)")
-
+    # Future home of an in-process MaxMind GeoLite2 lookup. Until that
+    # database is provisioned the feature is forced off above.
+    logger.warning(
+        "GEO_LOOKUP_ENABLED is true but no offline geolocation backend "
+        "is installed; returning Unknown."
+    )
     return ("Unknown", "XX")

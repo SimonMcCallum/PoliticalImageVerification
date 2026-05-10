@@ -74,33 +74,54 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - allow the Next.js frontend (local dev + production)
-_cors_origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost",
-    "http://127.0.0.1",
-]
-# In production behind nginx, the public origin is needed for direct API calls
+# CORS. Explicit method and header allowlist. Credentials are off
+# because the API is bearer-token only (Authorization header). Local
+# dev origins are only included outside production. Extra origins for
+# staging or partner environments can be added through the
+# CORS_EXTRA_ORIGINS setting (comma-separated).
+_cors_origins: list[str] = []
+if settings.PIVS_ENV.lower() in ("test", "development", "dev"):
+    _cors_origins.extend(
+        [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost",
+            "http://127.0.0.1",
+        ]
+    )
+
 if settings.VERIFICATION_BASE_URL:
     from urllib.parse import urlparse
+
     _parsed = urlparse(settings.VERIFICATION_BASE_URL)
     _origin = f"{_parsed.scheme}://{_parsed.netloc}".rstrip("/")
     if _origin not in _cors_origins:
         _cors_origins.append(_origin)
-    # Also add the root (without /verify path)
     _root = f"{_parsed.scheme}://{_parsed.hostname}"
     if _parsed.port:
         _root += f":{_parsed.port}"
     if _root not in _cors_origins:
         _cors_origins.append(_root)
 
+if settings.CORS_EXTRA_ORIGINS:
+    for o in settings.CORS_EXTRA_ORIGINS.split(","):
+        o = o.strip().rstrip("/")
+        if o and o not in _cors_origins:
+            _cors_origins.append(o)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    expose_headers=[
+        "X-PIVS-Bloom-Items",
+        "X-PIVS-Bloom-Bits",
+        "X-PIVS-Bloom-Hashes",
+        "X-PIVS-Bloom-Generated-At",
+    ],
+    max_age=3600,
 )
 
 @app.exception_handler(Exception)

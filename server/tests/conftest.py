@@ -17,6 +17,7 @@ from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Set test env vars BEFORE importing app code
+os.environ["PIVS_ENV"] = "test"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 os.environ["STORAGE_BACKEND"] = "local"
 os.environ["LOCAL_STORAGE_PATH"] = "./test_storage"
