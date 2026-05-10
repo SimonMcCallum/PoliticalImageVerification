@@ -6,13 +6,34 @@
     <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
+    <header class="popup-header">
+      <span class="popup-header__badge" aria-hidden>PIVS</span>
+      <div class="popup-header__text">
+        <strong>Political Image Verification</strong>
+        <span class="popup-header__mi">Whakamana whakaahua tōrangapū</span>
+      </div>
+    </header>
+
     <main>
-      <h1>PIVS</h1>
       <p>
         This extension checks political images against the New Zealand
-        Electoral Commission's register. All image analysis is local.
+        Electoral Commission's verification register. All image analysis
+        is local.
       </p>
-      <p id="status" data-testid="status">Ready.</p>
+
+      <dl class="server-meta" data-testid="server-meta">
+        <dt>API base</dt><dd id="api-base">–</dd>
+        <dt>Bloom filter last fetched</dt><dd id="bloom-fetched">never</dd>
+      </dl>
+
+      <div class="primary-actions">
+        <button id="refresh-bloom" type="button" class="btn btn-primary">
+          Refresh bloom filter
+        </button>
+        <span id="refresh-status" class="refresh-status" aria-live="polite"></span>
+      </div>
+
+      <p id="status" data-testid="status" class="status">Ready.</p>
 
       <section class="debug-toggle">
         <label>
@@ -31,11 +52,12 @@
           <dt>Hashes per lookup</dt><dd id="bloom-k">-</dd>
           <dt>Estimated false-positive rate</dt><dd id="bloom-fpr">-</dd>
           <dt>Generated at</dt><dd id="bloom-generated">-</dd>
+          <dt>Size on disk</dt><dd id="bloom-bytes">-</dd>
         </dl>
 
         <div class="debug-actions">
-          <button id="debug-clear" type="button">Clear</button>
-          <button id="debug-export" type="button">Export JSON</button>
+          <button id="debug-clear" type="button" class="btn btn-ghost">Clear log</button>
+          <button id="debug-export" type="button" class="btn btn-ghost">Export JSON</button>
         </div>
 
         <ul id="debug-events" data-testid="debug-events" class="events"></ul>

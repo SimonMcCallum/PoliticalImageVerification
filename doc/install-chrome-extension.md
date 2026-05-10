@@ -110,6 +110,21 @@ After installing:
    something looks wrong. You can pick a reason and add an optional
    short note.
 
+## Why we can download the bloom filter from a server (Manifest V3)
+
+The Chrome Web Store's Manifest V3 policy prohibits extensions from
+loading remotely hosted **code** (no `eval`, no `new Function()`, no
+dynamically imported scripts from a CDN, no injected `<script>` tags
+that point at remote URLs).
+
+The bloom filter we download from `simonmccallum.org.nz/api/v1/extension/bloom-snapshot`
+is **data, not code**. It is a fixed-layout binary blob: a small
+header followed by a bit array. The extension never executes any
+byte of it. The parsing logic (`BloomFilter.deserialize`) ships with
+the extension package and is reviewed at submission time. This is the
+same pattern a dictionary app uses for word lists, or a translation
+app for language packs, and is permitted under MV3.
+
 ## Debug (transparency) mode
 
 To support transparency for the Electoral Commission, security
@@ -160,8 +175,10 @@ The extension requests:
   filter snapshot.
 - `contextMenus`: adds the "Flag this political image" right-click item.
 - `scripting`: needed by Manifest V3 to inject the content script.
-- `host_permissions` for `http://localhost:8000/*` (developer build)
-  and `https://api.pivs.elections.nz/*` (production endpoint). These
+- `alarms`: schedules the daily bloom-filter refresh so the local
+  copy of the register stays current.
+- `host_permissions` for `https://simonmccallum.org.nz/*` (production
+  endpoint) and `http://localhost:8000/*` (developer build). These
   are the only origins the extension is allowed to call.
 - The content script is allowed to run on `http://*/*` and `https://*/*`
   because political images can appear on any site. The content script

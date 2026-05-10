@@ -1,16 +1,23 @@
 /**
  * Popup script.
  *
- * - Renders a status line.
- * - Lets the user toggle debug (transparency) mode.
- * - When debug mode is on, shows the bloom-filter metadata and a live
- *   tail of every relevant event the extension has produced.
+ * Surfaces the runtime state of the extension to the user (and to the
+ * Electoral Commission during transparency reviews):
+ *   - API base it is configured to talk to
+ *   - whether the bloom filter is loaded and when it was last fetched
+ *   - the bloom-filter metadata (size, FPR, hashes per lookup, etc.)
+ *   - a live event log when debug mode is on
  *
- * The popup reads its data from the in-memory debugLog plus
- * chrome.storage for the persistent toggle and bloom-filter meta.
+ * Also provides a manual "Refresh bloom filter" action that asks the
+ * service worker to re-download the snapshot.
  */
 
 import { debugLog, type DebugEvent } from "../lib/debug/log";
+import {
+  DEFAULT_API_BASE,
+  STORAGE_KEYS,
+  getApiBase,
+} from "../lib/config";
 
 const STATUS_EL = document.getElementById("status");
 const TOGGLE_EL = document.getElementById("debug-toggle") as HTMLInputElement | null;
@@ -18,6 +25,11 @@ const PANEL_EL = document.getElementById("debug-panel");
 const EVENTS_EL = document.getElementById("debug-events");
 const CLEAR_BTN = document.getElementById("debug-clear");
 const EXPORT_BTN = document.getElementById("debug-export");
+const REFRESH_BTN = document.getElementById("refresh-bloom");
+const REFRESH_STATUS = document.getElementById("refresh-status");
+
+const API_BASE_EL = document.getElementById("api-base");
+const FETCHED_AT_EL = document.getElementById("bloom-fetched");
 
 const BLOOM_LOADED = document.getElementById("bloom-loaded");
 const BLOOM_ITEMS = document.getElementById("bloom-items");
@@ -25,9 +37,7 @@ const BLOOM_BITS = document.getElementById("bloom-bits");
 const BLOOM_K = document.getElementById("bloom-k");
 const BLOOM_FPR = document.getElementById("bloom-fpr");
 const BLOOM_GENERATED = document.getElementById("bloom-generated");
-
-const DEBUG_KEY = "pivs.debugMode";
-const BLOOM_META_KEY = "pivs.bloomMeta";
+const BLOOM_BYTES = document.getElementById("bloom-bytes");
 
 interface PersistedBloomMeta {
   loaded: boolean;
@@ -36,27 +46,48 @@ interface PersistedBloomMeta {
   itemCount: number;
   estimatedFalsePositiveRate: number;
   generatedAtMillis: number;
+  bytes: number;
 }
 
 async function readDebugFlag(): Promise<boolean> {
   if (typeof chrome === "undefined" || !chrome.storage?.local) return false;
   return new Promise((resolve) => {
-    chrome.storage.local.get(DEBUG_KEY, (v) => resolve(Boolean(v[DEBUG_KEY])));
+    chrome.storage.local.get(STORAGE_KEYS.debugMode, (v) =>
+      resolve(Boolean(v[STORAGE_KEYS.debugMode]))
+    );
   });
 }
 
 async function writeDebugFlag(on: boolean): Promise<void> {
   if (typeof chrome === "undefined" || !chrome.storage?.local) return;
   return new Promise((resolve) => {
-    chrome.storage.local.set({ [DEBUG_KEY]: on }, () => resolve());
+    chrome.storage.local.set({ [STORAGE_KEYS.debugMode]: on }, () => resolve());
   });
 }
 
 async function readBloomMeta(): Promise<PersistedBloomMeta | null> {
   if (typeof chrome === "undefined" || !chrome.storage?.local) return null;
   return new Promise((resolve) => {
-    chrome.storage.local.get(BLOOM_META_KEY, (v) =>
-      resolve((v[BLOOM_META_KEY] as PersistedBloomMeta) ?? null)
+    chrome.storage.local.get(STORAGE_KEYS.bloomMeta, (v) =>
+      resolve((v[STORAGE_KEYS.bloomMeta] as PersistedBloomMeta) ?? null)
+    );
+  });
+}
+
+async function readFetchedAt(): Promise<number | null> {
+  if (typeof chrome === "undefined" || !chrome.storage?.local) return null;
+  return new Promise((resolve) => {
+    chrome.storage.local.get(STORAGE_KEYS.bloomFetchedAt, (v) =>
+      resolve((v[STORAGE_KEYS.bloomFetchedAt] as number | null) ?? null)
+    );
+  });
+}
+
+async function readLastError(): Promise<string | null> {
+  if (typeof chrome === "undefined" || !chrome.storage?.local) return null;
+  return new Promise((resolve) => {
+    chrome.storage.local.get(STORAGE_KEYS.bloomLastError, (v) =>
+      resolve((v[STORAGE_KEYS.bloomLastError] as string | null) ?? null)
     );
   });
 }
@@ -96,6 +127,7 @@ function renderBloomMeta(meta: PersistedBloomMeta | null) {
     if (BLOOM_K) BLOOM_K.textContent = "-";
     if (BLOOM_FPR) BLOOM_FPR.textContent = "-";
     if (BLOOM_GENERATED) BLOOM_GENERATED.textContent = "-";
+    if (BLOOM_BYTES) BLOOM_BYTES.textContent = "-";
     return;
   }
   BLOOM_LOADED.textContent = "yes";
@@ -109,6 +141,64 @@ function renderBloomMeta(meta: PersistedBloomMeta | null) {
   if (BLOOM_GENERATED) {
     BLOOM_GENERATED.textContent = new Date(meta.generatedAtMillis).toISOString();
   }
+  if (BLOOM_BYTES) {
+    BLOOM_BYTES.textContent = `${meta.bytes.toLocaleString()} bytes`;
+  }
+}
+
+function setRefreshStatus(text: string, kind: "ok" | "error" | "" = "") {
+  if (!REFRESH_STATUS) return;
+  REFRESH_STATUS.textContent = text;
+  REFRESH_STATUS.className = `refresh-status refresh-status--${kind || "neutral"}`;
+}
+
+async function refreshDisplay() {
+  const apiBase = await getApiBase();
+  if (API_BASE_EL) API_BASE_EL.textContent = apiBase || DEFAULT_API_BASE;
+
+  const fetchedAt = await readFetchedAt();
+  if (FETCHED_AT_EL) {
+    FETCHED_AT_EL.textContent = fetchedAt
+      ? new Date(fetchedAt).toLocaleString()
+      : "never";
+  }
+
+  const meta = await readBloomMeta();
+  renderBloomMeta(meta);
+
+  const lastError = await readLastError();
+  if (lastError) {
+    setRefreshStatus(`Last refresh failed: ${lastError}`, "error");
+  } else if (meta?.loaded) {
+    setRefreshStatus("Bloom filter loaded.", "ok");
+  } else {
+    setRefreshStatus(
+      "Bloom filter not loaded. Click Refresh to download it now.",
+      ""
+    );
+  }
+}
+
+async function requestRefresh(): Promise<void> {
+  if (!REFRESH_BTN) return;
+  REFRESH_BTN.setAttribute("disabled", "true");
+  setRefreshStatus("Downloading bloom filter…", "");
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: "pivs.refreshBloom" });
+    if (resp?.ok) {
+      setRefreshStatus("Bloom filter refreshed.", "ok");
+    } else {
+      setRefreshStatus(`Refresh failed: ${resp?.error ?? "unknown error"}`, "error");
+    }
+  } catch (err) {
+    setRefreshStatus(
+      `Refresh failed: ${err instanceof Error ? err.message : String(err)}`,
+      "error"
+    );
+  } finally {
+    REFRESH_BTN.removeAttribute("disabled");
+    void refreshDisplay();
+  }
 }
 
 async function init() {
@@ -119,8 +209,7 @@ async function init() {
   if (PANEL_EL) PANEL_EL.hidden = !enabled;
   debugLog.setEnabled(enabled);
 
-  const meta = await readBloomMeta();
-  renderBloomMeta(meta);
+  await refreshDisplay();
 
   if (EVENTS_EL) {
     EVENTS_EL.innerHTML = "";
@@ -154,6 +243,22 @@ async function init() {
     a.download = `pivs-debug-${new Date().toISOString()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  REFRESH_BTN?.addEventListener("click", () => {
+    void requestRefresh();
+  });
+
+  // Reflect storage changes (e.g. background worker refresh) live.
+  chrome.storage?.onChanged?.addListener((changes, area) => {
+    if (area !== "local") return;
+    if (
+      STORAGE_KEYS.bloomMeta in changes ||
+      STORAGE_KEYS.bloomFetchedAt in changes ||
+      STORAGE_KEYS.bloomLastError in changes
+    ) {
+      void refreshDisplay();
+    }
   });
 }
 
