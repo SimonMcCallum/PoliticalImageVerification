@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PIVS browser-extension icon.
+
+  Inspired by the Electoral Commission "Orange Guy" silhouette: an
+  orange background with a black ballot-box figure. The original
+  image has a hand placing a white ballot into the box; here the
+  hand is removed and the ballot carries a question mark in its
+  centre, signalling "is this image registered?".
+
+  Palette matches the EC system used elsewhere in this repo:
+    orange #f58220
+    black  #000000
+    white  #ffffff
+
+  Single 256x256 viewBox so rasterising to icon sizes is trivial.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 256 256" width="256" height="256">
+
+  <!-- Orange background -->
+  <rect width="256" height="256" fill="#f58220"/>
+
+  <!-- Black silhouette: head, side ears, and a curved ballot-box body.
+       Drawn as one filled path. The interior cavity of the box and
+       the small orange features are knocked back to the background
+       colour by overlaid orange shapes below. -->
+  <path fill="#000000"
+        d="M 99 22
+           c -4 0 -7 4 -7 9
+           v 9
+           c 0 5 3 8 7 8
+           c 4 0 7 -3 7 -8
+           v -9
+           c 0 -5 -3 -9 -7 -9 z
+           M 157 22
+           c -4 0 -7 4 -7 9
+           v 9
+           c 0 5 3 8 7 8
+           c 4 0 7 -3 7 -8
+           v -9
+           c 0 -5 -3 -9 -7 -9 z" />
+
+  <!-- Big head shape -->
+  <path fill="#000000"
+        d="M 128 36
+           c -40 0 -64 22 -64 50
+           c 0 18 8 28 22 33
+           h 84
+           c 14 -5 22 -15 22 -33
+           c 0 -28 -24 -50 -64 -50 z" />
+
+  <!-- Side ears (small protrusions) -->
+  <circle cx="60" cy="84" r="9" fill="#000000"/>
+  <circle cx="196" cy="84" r="9" fill="#000000"/>
+
+  <!-- Curved body / ballot box: outer crescent -->
+  <path fill="#000000"
+        d="M 24 122
+           c 0 70 46 112 104 112
+           c 58 0 104 -42 104 -112
+           v -14
+           h -208 z" />
+
+  <!-- Knock back the inside of the bowl to orange to leave a "U" -->
+  <path fill="#f58220"
+        d="M 48 122
+           c 0 56 36 92 80 92
+           c 44 0 80 -36 80 -92
+           v -2
+           h -160 z" />
+
+  <!-- White ballot in the centre -->
+  <rect x="94" y="98" width="68" height="86" fill="#ffffff" rx="2" ry="2"/>
+
+  <!-- Subtle outline on the ballot so it stays visible on screens
+       where the orange and white have similar luminance edges -->
+  <rect x="94" y="98" width="68" height="86"
+        fill="none" stroke="#000000" stroke-width="2" rx="2" ry="2"/>
+
+  <!-- Question mark centred in the ballot -->
+  <text x="128" y="166"
+        font-family="Arial Black, Helvetica Neue, Arial, sans-serif"
+        font-size="80" font-weight="900"
+        text-anchor="middle" fill="#000000">?</text>
+</svg>
