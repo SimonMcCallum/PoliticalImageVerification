@@ -1,14 +1,32 @@
 """
 OCR service for promoter statement detection.
 
-Uses Tesseract OCR to extract text from political campaign images and
-fuzzy-matches against the party's registered promoter statement.
+NZ section 204F promoter statements are typically printed in small
+text (often near the edge of a campaign image), and on social-media
+graphics they are frequently white on a dark background. Plain
+grayscale + contrast OCR misses many of these. The pipeline therefore
+runs Tesseract on several variants of the image and merges the text
+back together before the fuzzy-match stage:
+
+  1. grayscale + contrast + sharpness (handles dark-on-light)
+  2. inverted grayscale + contrast (handles white-on-dark)
+  3. high-contrast binary threshold (handles low-contrast scans)
+  4. 2x upscale of variant 1 (helps with small text)
+
+For each variant we ask Tesseract for both a generic-text pass and a
+"sparse text" pass (page-segmentation mode 11), since promoter
+statements are usually a short isolated block rather than flowing
+paragraphs.
+
+The combined text is then passed to the fuzzy-match stage. The
+behavioural contract for callers is unchanged.
 """
 
 import io
+import logging
 from difflib import SequenceMatcher
 
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageOps
 
 from app.core.config import settings
 
@@ -17,49 +35,105 @@ try:
 except ImportError:
     pytesseract = None  # type: ignore[assignment]
 
+logger = logging.getLogger(__name__)
+
+
+def _to_grayscale_contrast(img: Image.Image) -> Image.Image:
+    """Grayscale + contrast + sharpness, suitable for dark-on-light text."""
+    gray = img.convert("L")
+    gray = ImageEnhance.Contrast(gray).enhance(2.0)
+    gray = ImageEnhance.Sharpness(gray).enhance(2.0)
+    return gray
+
+
+def _to_inverted_contrast(img: Image.Image) -> Image.Image:
+    """Inverted grayscale + contrast, suitable for white-on-dark text."""
+    gray = img.convert("L")
+    inv = ImageOps.invert(gray)
+    inv = ImageEnhance.Contrast(inv).enhance(2.0)
+    return inv
+
+
+def _to_binary_threshold(img: Image.Image, threshold: int = 160) -> Image.Image:
+    """Aggressive binarisation; helps low-contrast scans of printed text."""
+    gray = img.convert("L")
+    return gray.point(lambda p: 255 if p >= threshold else 0).convert("L")
+
+
+def _to_upscaled(img: Image.Image, factor: int = 2) -> Image.Image:
+    """Upscale to give Tesseract more pixels per glyph on small text."""
+    w, h = img.size
+    return img.resize((w * factor, h * factor), Image.LANCZOS)
+
 
 def _preprocess_image(image_bytes: bytes) -> Image.Image:
-    """Pre-process image for better OCR accuracy.
-
-    Converts to grayscale and increases contrast to help Tesseract
-    extract text from varied backgrounds.
-    """
+    """Backward-compatible single-variant preprocessor (used by callers
+    that only need one image)."""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    return _to_grayscale_contrast(img)
 
-    # Convert to grayscale
-    gray = img.convert("L")
 
-    # Increase contrast
-    enhancer = ImageEnhance.Contrast(gray)
-    enhanced = enhancer.enhance(2.0)
-
-    # Increase sharpness
-    enhancer = ImageEnhance.Sharpness(enhanced)
-    enhanced = enhancer.enhance(2.0)
-
-    return enhanced
+def _run_tesseract(img: Image.Image, psm: int) -> str:
+    """Run Tesseract once with the given page-segmentation mode."""
+    config = f"--psm {psm}"
+    try:
+        return pytesseract.image_to_string(img, lang="eng", config=config).strip()
+    except Exception as exc:
+        logger.debug(f"Tesseract failed at psm={psm}: {exc}")
+        return ""
 
 
 def extract_text_from_image(image_bytes: bytes) -> str:
-    """Run Tesseract OCR on an image and return all extracted text.
+    """Run multi-variant Tesseract OCR and return the combined text.
 
-    Args:
-        image_bytes: Image file bytes.
+    The variants cover dark-on-light, white-on-dark, low-contrast, and
+    small-text cases. The page-segmentation modes 3 (auto) and 11
+    (sparse) are both tried per variant. Duplicate lines are
+    collapsed at the end.
 
-    Returns:
-        Extracted text as a single string.
-
-    Raises:
-        RuntimeError: If pytesseract is not installed.
+    Raises ``RuntimeError`` if pytesseract is not installed.
     """
     if pytesseract is None:
         raise RuntimeError(
             "pytesseract is not installed. Install with: pip install pytesseract"
         )
 
-    processed = _preprocess_image(image_bytes)
-    text = pytesseract.image_to_string(processed, lang="eng")
-    return text.strip()
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+    variants: list[Image.Image] = [
+        _to_grayscale_contrast(img),
+        _to_inverted_contrast(img),
+        _to_binary_threshold(img),
+        _to_upscaled(_to_grayscale_contrast(img), factor=2),
+    ]
+
+    pieces: list[str] = []
+    for v in variants:
+        # psm=3 is the default; psm=11 ("sparse text") is much better
+        # for finding a single isolated block like a promoter line.
+        for psm in (3, 11):
+            piece = _run_tesseract(v, psm)
+            if piece:
+                pieces.append(piece)
+
+    if not pieces:
+        return ""
+
+    # Collapse duplicate lines while preserving order.
+    seen: set[str] = set()
+    out_lines: list[str] = []
+    for chunk in pieces:
+        for line in chunk.splitlines():
+            ln = line.strip()
+            if not ln:
+                continue
+            key = ln.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out_lines.append(ln)
+
+    return "\n".join(out_lines)
 
 
 def _best_substring_match(text: str, target: str) -> tuple[str, float]:

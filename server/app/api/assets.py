@@ -87,50 +87,56 @@ async def submit_asset(
     party_result = await db.execute(select(Party).where(Party.id == user.party_id))
     party = party_result.scalar_one()
 
-    # Auto-detect promoter statement via OCR
+    # Promoter statement handling.
+    #
+    # We OCR the uploaded image looking for the party's registered
+    # statement. We do NOT auto-overlay a statement on submission any
+    # more, because some statements are intentionally tiny or white on
+    # the image background and were being mis-detected as missing. The
+    # client gets back ``promoter_missing=True`` when nothing was found
+    # and can prompt the submitter ("we could not detect your promoter
+    # statement on this image. Add one now?"). If the submitter agrees
+    # they re-submit (or follow up) with ``add_promoter_statement=true``
+    # and the overlay is applied.
     auto_promoter_added = False
     promoter_already_present = False
+    promoter_missing = False
     promoter_check_result = None
     promoter_storage_key = None
 
     effective_statement = _get_effective_promoter_statement(user, party)
 
     if effective_statement:
-        # Always run OCR to check for existing promoter statement
+        # Multi-variant OCR (handles small text and white-on-dark).
         from app.services.ocr import find_promoter_statement
+
         promoter_check_result = find_promoter_statement(
             image_bytes, effective_statement
         )
-
         if promoter_check_result.get("found"):
             promoter_already_present = True
         else:
-            # Promoter not found -- auto-add it
-            position = promoter_position or user.default_statement_position
-            if position not in VALID_POSITIONS:
-                position = "bottom-left"
-
-            promoter_bytes = overlay_promoter_statement(
-                image_bytes, effective_statement, position=position
-            )
-            promoter_storage_key = await store_blob(promoter_bytes, prefix="promoter")
-            auto_promoter_added = True
+            promoter_missing = True
     elif add_promoter_statement:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No promoter statement set. Set one via your profile or party settings.",
         )
 
-    # If user explicitly requested promoter and it wasn't auto-added (already present)
-    if add_promoter_statement and not promoter_storage_key and not promoter_already_present:
-        if effective_statement:
-            position = promoter_position or user.default_statement_position
-            if position not in VALID_POSITIONS:
-                position = "bottom-left"
-            promoter_bytes = overlay_promoter_statement(
-                image_bytes, effective_statement, position=position
-            )
-            promoter_storage_key = await store_blob(promoter_bytes, prefix="promoter")
+    # The submitter must explicitly opt in to overlaying the statement.
+    if (
+        add_promoter_statement
+        and not promoter_already_present
+        and effective_statement
+    ):
+        position = promoter_position or user.default_statement_position
+        if position not in VALID_POSITIONS:
+            position = "bottom-left"
+        promoter_bytes = overlay_promoter_statement(
+            image_bytes, effective_statement, position=position
+        )
+        promoter_storage_key = await store_blob(promoter_bytes, prefix="promoter")
+        auto_promoter_added = True
 
     # Compute hashes on the original image (before any badge overlay)
     hashes = compute_all_hashes(image_bytes)
@@ -218,6 +224,7 @@ async def submit_asset(
         promoter_check=promoter_check_result,
         auto_promoter_added=auto_promoter_added,
         promoter_already_present=promoter_already_present,
+        promoter_missing=promoter_missing,
         status=asset.status,
         created_at=asset.created_at,
         expires_at=asset.expires_at,

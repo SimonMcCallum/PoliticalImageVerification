@@ -17,6 +17,7 @@ from app.models.party import Party
 from app.models.verification import MatchType, VerificationLog, VerificationResult
 from app.schemas.verification import (
     HashVerifyRequest,
+    RiskAssessmentResponse,
     VerificationByIdResponse,
     VerificationResponse,
 )
@@ -25,6 +26,7 @@ from app.services.hashing import (
     pdq_match,
     phash_match,
 )
+from app.services.risk import RiskAssessment, classify as classify_risk
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +146,43 @@ async def _build_response(
     )
 
 
+async def _run_ocr_cross_check(
+    image_bytes: bytes, db: AsyncSession
+) -> dict | None:
+    """OCR an image and look for any party's promoter statement.
+
+    Returns the dict that ``find_promoter_across_parties`` produces,
+    or None if no parties have registered a statement or OCR failed.
+    Failures are swallowed so the user-facing verification never
+    falls over on an OCR engine issue.
+    """
+    try:
+        from app.services.ocr import find_promoter_across_parties
+
+        party_result = await db.execute(
+            select(Party).where(Party.promoter_statement.isnot(None))
+        )
+        parties_with_statements = [
+            (str(p.id), p.name, p.promoter_statement)
+            for p in party_result.scalars().all()
+        ]
+        if not parties_with_statements:
+            return None
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            find_promoter_across_parties,
+            image_bytes,
+            parties_with_statements,
+        )
+    except Exception:
+        logger.debug("OCR cross-check failed (non-fatal)")
+        return None
+
+
+def _risk_to_response(risk: RiskAssessment) -> RiskAssessmentResponse:
+    return RiskAssessmentResponse(**risk.to_dict())
+
+
 async def _record_geo_stat(request: Request, db: AsyncSession) -> None:
     """Record geographic stats for this verification request.
 
@@ -206,37 +245,25 @@ async def verify_image(
         phash=hashes["phash"],
     )
 
-    # OCR-based promoter detection (only when hash matching fails)
-    promoter_detected = False
-    promoter_party_name = None
-    if not asset:
-        try:
-            from app.services.ocr import find_promoter_across_parties
+    # OCR cross-check across ALL parties. We always run it (when we have
+    # the bytes available) so that even a confirmed registered image
+    # surfaces whether it carries a recognised promoter statement, and
+    # so unregistered images can be classified as "attributing party X
+    # but not registered by X" / "unknown promoter" / "no promoter".
+    ocr_result = await _run_ocr_cross_check(image_bytes, db)
 
-            party_result = await db.execute(
-                select(Party).where(Party.promoter_statement.isnot(None))
-            )
-            parties_with_statements = [
-                (str(p.id), p.name, p.promoter_statement)
-                for p in party_result.scalars().all()
-            ]
-            if parties_with_statements:
-                ocr_result = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    find_promoter_across_parties,
-                    image_bytes,
-                    parties_with_statements,
-                )
-                if ocr_result.get("found"):
-                    promoter_detected = True
-                    promoter_party_name = ocr_result.get("party_name")
-        except Exception:
-            pass  # OCR failure is non-fatal
+    # Risk classification.
+    risk = classify_risk(
+        image_match=asset is not None,
+        match_type=match_type.value,
+        pdq_distance=pdq_dist,
+        ocr_result=ocr_result,
+    )
 
-    # Record geographic stats (privacy-first: only aggregate counts)
+    # Record geographic stats (privacy-first: only aggregate counts).
     await _record_geo_stat(request, db)
 
-    # Log the verification attempt
+    # Log the verification attempt.
     log_entry = VerificationLog(
         asset_id=asset.id if asset else None,
         match_type=match_type,
@@ -254,11 +281,12 @@ async def verify_image(
         asset, match_type, pdq_dist, phash_dist, confidence, db
     )
 
-    # Augment response with OCR data
-    if promoter_detected and not asset:
+    # Back-compat flat fields for the existing UI.
+    if ocr_result and ocr_result.get("found") and not asset:
         response.promoter_detected = True
-        response.promoter_party_name = promoter_party_name
+        response.promoter_party_name = ocr_result.get("party_name")
 
+    response.risk = _risk_to_response(risk)
     return response
 
 
@@ -281,7 +309,18 @@ async def verify_hash(
         db, sha256=body.sha256, pdq_hash=body.pdq, phash=body.phash
     )
 
-    # Record geographic stats
+    # No image bytes are available here, so we cannot run OCR. We can
+    # still classify based on whether the hash matched the register.
+    # The browser extension is expected to send an OCR'd promoter
+    # statement separately (the /extension/report endpoint).
+    risk = classify_risk(
+        image_match=asset is not None,
+        match_type=match_type.value,
+        pdq_distance=pdq_dist,
+        ocr_result=None,
+    )
+
+    # Record geographic stats.
     await _record_geo_stat(request, db)
 
     log_entry = VerificationLog(
@@ -297,7 +336,11 @@ async def verify_hash(
     db.add(log_entry)
     await db.commit()
 
-    return await _build_response(asset, match_type, pdq_dist, phash_dist, confidence, db)
+    response = await _build_response(
+        asset, match_type, pdq_dist, phash_dist, confidence, db
+    )
+    response.risk = _risk_to_response(risk)
+    return response
 
 
 @router.get("/{verification_id}", response_model=VerificationByIdResponse)

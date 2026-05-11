@@ -25,6 +25,11 @@ class AssetResponse(BaseModel):
     promoter_check: dict | None = None
     auto_promoter_added: bool = False
     promoter_already_present: bool = False
+    # True when OCR did not find a promoter statement on the uploaded
+    # image. The client should warn the submitter and offer them the
+    # option to re-submit with ``add_promoter_statement=true`` so the
+    # statement is overlaid. We no longer overlay automatically.
+    promoter_missing: bool = False
     status: AssetStatus
     created_at: datetime
     expires_at: datetime | None

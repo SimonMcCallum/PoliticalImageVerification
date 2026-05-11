@@ -13,6 +13,25 @@ PDQ_PATTERN = r"^[0-9a-fA-F]{64}$"   # PDQ is also 256 bits => 64 hex chars
 PHASH_PATTERN = r"^[0-9a-fA-F]{16}$"  # pHash is 64 bits => 16 hex chars
 
 
+class RiskAssessmentResponse(BaseModel):
+    """Risk classification surfaced to the caller.
+
+    See app/services/risk.py for the full decision table. The
+    ``level`` and ``category`` fields are stable machine-readable
+    codes; the ``explanation`` is intended for direct display to a
+    voter or journalist.
+    """
+
+    level: str  # "ok" | "info" | "low" | "warn" | "high"
+    category: str  # see RiskCategory enum in services/risk.py
+    explanation: str
+    suggested_action: str  # see SuggestedAction enum
+    attributed_party_name: str | None = None
+    attributed_party_id: str | None = None
+    promoter_text_present: bool = False
+    promoter_pattern_matched: bool = False
+
+
 class VerificationResponse(BaseModel):
     verified: bool
     result: VerificationResult
@@ -24,9 +43,13 @@ class VerificationResponse(BaseModel):
     registered_date: datetime | None = None
     pdq_distance: int | None = None
     phash_distance: int | None = None
-    # OCR-detected promoter info (when image is unverified but has promoter text)
+    # OCR-detected promoter info (when image is unverified but has promoter text).
+    # Kept for backwards compatibility with the existing client; new
+    # consumers should read the structured `risk` field instead.
     promoter_detected: bool = False
     promoter_party_name: str | None = None
+    # Full risk classification.
+    risk: RiskAssessmentResponse | None = None
 
 
 class VerificationByIdResponse(BaseModel):
